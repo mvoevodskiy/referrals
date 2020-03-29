@@ -287,7 +287,14 @@ class referrals
                 $ms2->initialize($ctx);
                 $cart = $ms2->cart->get();
                 foreach ($cart as $good) {
-                    $amount += $this->getAbsAmount($this->config['useLimit'], $good['price'] * $good['count']);
+                    $useLimit = $this->config['useLimit'];
+                    if ($product = $this->modx->getObject('msProduct', $good['id'])) {
+                        $productLimit = $product->get($this->config['useLimitProductField']);
+                        if (!empty($productLimit) || $productLimit === 0 || $productLimit === '0') {
+                            $useLimit = $productLimit;
+                        }
+                    }
+                    $amount += $this->getAbsAmount($useLimit, $good['price'] * $good['count']);
                 }
                 return min($balance, $amount);
             }
