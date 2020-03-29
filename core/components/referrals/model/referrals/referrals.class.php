@@ -283,10 +283,13 @@ class referrals
         if ($balance = $this->getBalance($account)) {
             /** @var miniShop2 $ms2 */
             if ($forOrder and $ms2 = $this->modx->getService('minishop2')) {
+                $amount = 0;
                 $ms2->initialize($ctx);
-                $orderCost = $ms2->order->getCost(true, true);
-                $this->modx->log(1, 'ORDER COST: ' . $orderCost);
-                return min($balance, ( (float) $orderCost * ((float) $this->config['maxPercentForUse']) / 100));
+                $cart = $ms2->cart->get();
+                foreach ($cart as $good) {
+                    $amount += $this->getAbsAmount($this->config['useLimit'], $good['price'] * $good['count']);
+                }
+                return min($balance, $amount);
             }
             return $balance;
         }
