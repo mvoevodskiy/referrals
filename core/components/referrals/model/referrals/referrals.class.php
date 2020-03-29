@@ -39,7 +39,17 @@ class referrals
 
             'accountReferrals' => $this->modx->getOption('referrals_account_type_id_referrals'),
             'accountMoney' => $this->modx->getOption('referrals_account_type_id_money'),
-            'maxPercentForUse' => $this->modx->getOption('referrals_max_percent_for_use'),
+
+            'useLimit' => $this->modx->getOption('referrals_use_limit'),
+            'levelRewards' => $modx->fromJSON($this->modx->getOption('referrals_level_rewards')),
+
+            'confirmField' => $this->modx->getOption('referrals_use_limit_product_field', null, 'phone'),
+            'useLimitProductField' => $this->modx->getOption('referrals_use_limit_product_field', null, '100%'),
+            'levelRewardsProductField' => $modx->fromJSON($this->modx->getOption('referrals_level_rewards_productField', null, '{}')),
+
+            'cookieTtl' => $this->modx->getOption('referrals_cookie_ttl', null, 30),
+            'referralTtl' => $this->modx->getOption('referrals_cookie_ttl', null, 1095),
+            'rewardTtl' => $this->modx->getOption('referrals_cookie_ttl', null, 1095),
 
             'defaultTransport' => $this->modx->getOption('referrals_default_transport', null, 'sms'),
             'smsLogin' => $this->modx->getOption('referrals_sms_login'),
