@@ -1,0 +1,1 @@
+{$_modx->config.site_url ~ '?' ~ $_modx->config.referrals_var_url ~ '=' ~ $_modx->user.id}
