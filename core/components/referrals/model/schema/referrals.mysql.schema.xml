@@ -51,7 +51,9 @@
 
     <object class="refLog" table="referrals_log" extends="xPDOSimpleObject">
         <field key="user" dbtype="int" precision="10" phptype="integer" null="true" default="0"/>
+        <field key="parent" dbtype="int" precision="10" phptype="integer" null="true" default="0"/>
         <field key="action" dbtype="varchar" precision="20" phptype="string" null="false" default=""/>
+        <field key="status" dbtype="varchar" precision="20" phptype="string" null="false" default=""/>
 <!--        <field key="referral" dbtype="int" precision="10" phptype="integer" null="true" default="0"/>-->
         <field key="account" dbtype="int" precision="10" phptype="integer" null="true" default="0"/>
         <field key="delta"  dbtype="decimal" precision="12,2" phptype="float" null="true" default="0"/>
@@ -64,9 +66,16 @@
         <index alias="action" name="action" primary="false" unique="false" type="BTREE">
             <column key="action" length="" collation="A" null="false"/>
         </index>
+        <index alias="status" name="status" primary="false" unique="false" type="BTREE">
+            <column key="status" length="" collation="A" null="false"/>
+        </index>
+        <index alias="parent" name="parent" primary="false" unique="false" type="BTREE">
+            <column key="parent" length="" collation="A" null="false"/>
+        </index>
 
         <aggregate alias="User" class="modUser" local="user" foreign="id" cardinality="one" owner="foreign"/>
         <aggregate alias="UserProfile" class="modUserProfile" local="user" foreign="internalKey" cardinality="one" owner="foreign"/>
+        <aggregate alias="Parent" class="refLog" local="parent" foreign="id" cardinality="one" owner="foreign"/>
 
     </object>
 
