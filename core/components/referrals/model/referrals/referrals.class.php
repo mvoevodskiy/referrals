@@ -86,6 +86,75 @@ class referrals
     }
 
 
+    /**
+     * @param msOrder $order
+     */
+    public function rewardOrder($order)
+    {
+        if (!$initiator = $this->modx->getObject('refUser', ['user' => $order->get('user_id')])) {
+            return true;
+        }
+
+        $levelUsers = [];
+        $rewardUsers = [];
+        $products = [];
+        $users = [];
+        $multiply = 1;
+        $productsTotal = 0;
+        $orderTotal = $order->get('cost') - $order->get('delivery_cost');
+
+        $defaultRewards = $this->config['levelRewards'];
+        $defaultSelf = $defaultRewards['self'] ?? 0;
+        unset($defaultRewards['self']);
+        $levels = array_keys($defaultRewards);
+        sort($levels);
+
+        /** @var refUser $current */
+        $current = $initiator;
+        while ($current = $current->Master && count($users) < count($levels)) {
+            $users[] = $current->get('user');
+        }
+        foreach ($levels as $i => $level) {
+            $levelUsers[$level] = $users[$i];
+        }
+
+        $levels['self'] = $defaultSelf;
+        $levelUsers['self'] = $order->get('user_id');
+
+        /** @var msOrderProduct $oProduct */
+        foreach ($order->getMany('Products') as $oProduct) {
+            $productsTotal += $oProduct->get('cost');
+            $pId = $oProduct->get('product_id');
+            if (!isset($products[$pId])) {
+                $products[$pId] = ['all' => $defaultRewards, 'self' => $defaultSelf];
+                /** @var msProduct $product */
+                if ($product = $oProduct->get('Product')) {
+                    $productRewards = $this->modx->fromJSON($product->get($this->config['levelRewardsProductField']));
+                    $products[$pId] = is_array($productRewards) ? $productRewards : [];
+                }
+            }
+            foreach ($levelUsers as $level => $user) {
+                $rewardUsers[$user] = $rewardUsers[$user] ?? 0;
+                $rewardUsers[$user] += $this->getAbsAmount($products[$pId][$level] ?? $levels[$level],
+                    $oProduct->get('cost'));
+            }
+        }
+
+        if ($productsTotal < $orderTotal) {
+            $multiply = $productsTotal / $orderTotal;
+        }
+
+        foreach ($rewardUsers as $rewardUser => $amount) {
+            $reward = $amount * $multiply;
+            if ($reward) {
+                $this->updateAccount($rewardUser, refLog::ACTION_INCREASE, $reward, $order->get('id'));
+            }
+        }
+
+        return true;
+    }
+
+
     public function updateAccount($user, $action, $accountType, $delta, $order = 0)
     {
         if (!class_exists('refAccount')) {
