@@ -40,7 +40,7 @@ switch ($modx->event->name) {
         if (!isset($_COOKIE[$varCookie]) && isset($_GET[$varUrl]) && (int) $_GET[$varUrl]) {
             $master = (int) $_GET[$varUrl];
             if ($modx->getCount('refUser', ['user' => $master, 'confirmed' => true])) {
-                setcookie($varCookie, (int)$_GET[$varUrl]);
+                setcookie($varCookie, (int)$_GET[$varUrl], time() + $referrals->config['ttl']['cookie'] * 3600 * 24);
             }
         }
 
