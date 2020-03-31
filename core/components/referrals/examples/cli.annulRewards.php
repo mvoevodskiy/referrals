@@ -53,7 +53,7 @@ function echoLog($msg, $data = [])
     ob_flush();
 }
 
-$date = date('Y-m-d', time() - $modx->getOption('referrals_reward_ttl') * 3600 * 24);
+$date = date('Y-m-d', time() - $referrals->config['ttl']['reward'] * 3600 * 24);
 $logs = $modx->getIterator('refLog', ['status' => refLog::STATUS_ACTIVE, 'occurred:<' => $date, 'delta:>' => 0]);
 foreach ($logs as $log) {
     $log->set('status', refLog::STATUS_ANNULLED);

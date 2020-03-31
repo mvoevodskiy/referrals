@@ -53,7 +53,7 @@ function echoLog($msg, $data = [])
     ob_flush();
 }
 
-$date = date('Y-m-d', time() - $modx->getOption('referrals_referral_ttl') * 3600 * 24);
+$date = date('Y-m-d', time() - $referrals->config['ttl']['referral'] * 3600 * 24);
 $q = $modx->newQuery('refUser');
 $q->innerJoin('refLog', 'refLog', 'refUser.id = refLog.user');
 $q->where([

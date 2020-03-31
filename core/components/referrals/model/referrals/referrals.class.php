@@ -47,10 +47,11 @@ class referrals
             'useLimitProductField' => $this->modx->getOption('referrals_use_limit_product_field', null, '100%'),
             'levelRewardsProductField' => $modx->fromJSON($this->modx->getOption('referrals_level_rewards_productField', null, '{}')),
 
-            'cookieTtl' => $this->modx->getOption('referrals_cookie_ttl', null, 30),
-            'referralTtl' => $this->modx->getOption('referrals_cookie_ttl', null, 1095),
-            'rewardTtl' => $this->modx->getOption('referrals_cookie_ttl', null, 1095),
-
+            'ttl' => [
+                'cookie' => $this->modx->getOption('referrals_cookie_ttl', null, 30),
+                'referral' => $this->modx->getOption('referrals_cookie_ttl', null, 1095),
+                'reward' => $this->modx->getOption('referrals_cookie_ttl', null, 1095),
+            ],
             'defaultTransport' => $this->modx->getOption('referrals_default_transport', null, 'sms'),
             'smsLogin' => $this->modx->getOption('referrals_sms_login'),
             'smsPassword' => $this->modx->getOption('referrals_sms_password'),
