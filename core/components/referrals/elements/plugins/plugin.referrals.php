@@ -161,7 +161,7 @@ switch ($modx->event->name) {
         /** @var int $sum */
         /** @var int $type */
         $propsElem = $referrals->config['orderPropertiesElement'];
-        /** @var msOrder $msOrder */
+        /** @var msOrder $order */
         $properties = $order->get('properties');
         $refProperties = $properties[$propsElem];
         if ($refProperties['useFromAccount']) {
@@ -188,6 +188,19 @@ switch ($modx->event->name) {
             }
             if ($sum and $action) {
                 $referrals->updateAccount($userId, $action, $type, $sum, $order->get('id'));
+            }
+
+            switch ($status) {
+                case $referrals->config['orderStatuses']['reward']:
+                    $rewardAction = refLog::ACTION_REWARD;
+                    break;
+
+                case $referrals->config['orderStatuses']['revoke']:
+                    $rewardAction = refLog::ACTION_REVOKE;
+                    break;
+            }
+            if (!empty($rewardAction)) {
+                $referrals->rewardOrder($order, $rewardAction);
             }
         }
 

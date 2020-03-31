@@ -61,6 +61,8 @@ class referrals
             'orderStatuses' => [
                 'decrease' => $this->modx->getOption('referrals_order_status_decrease'),
                 'increase' => $this->modx->getOption('referrals_order_status_increase'),
+                'reward' => $this->modx->getOption('referrals_order_status_reward'),
+                'revoke' => $this->modx->getOption('referrals_order_status_revoke'),
             ],
 
             'frontendJS' => $this->modx->getOption('referrals_frontend_js'),
@@ -89,7 +91,7 @@ class referrals
     /**
      * @param msOrder $order
      */
-    public function rewardOrder($order)
+    public function rewardOrder($order, $action = 'reward')
     {
         if (!$initiator = $this->modx->getObject('refUser', ['user' => $order->get('user_id')])) {
             return true;
@@ -100,54 +102,62 @@ class referrals
         $products = [];
         $users = [];
         $multiply = 1;
-        $productsTotal = 0;
-        $orderTotal = $order->get('cost') - $order->get('delivery_cost');
 
-        $defaultRewards = $this->config['levelRewards'];
-        $defaultSelf = $defaultRewards['self'] ?? 0;
-        unset($defaultRewards['self']);
-        $levels = array_keys($defaultRewards);
-        sort($levels);
+        if ($action === refLog::ACTION_REWARD) {
+            $productsTotal = 0;
+            $orderTotal = $order->get('cost') - $order->get('delivery_cost');
 
-        /** @var refUser $current */
-        $current = $initiator;
-        while ($current = $current->Master && count($users) < count($levels)) {
-            $users[] = $current->get('user');
-        }
-        foreach ($levels as $i => $level) {
-            $levelUsers[$level] = $users[$i];
-        }
+            $defaultRewards = $this->config['levelRewards'];
+            $defaultSelf = $defaultRewards['self'] ?? 0;
+            unset($defaultRewards['self']);
+            $levels = array_keys($defaultRewards);
+            sort($levels);
 
-        $levels['self'] = $defaultSelf;
-        $levelUsers['self'] = $order->get('user_id');
+            /** @var refUser $current */
+            $current = $initiator;
+            while ($current = $current->Master && count($users) < count($levels)) {
+                $users[] = $current->get('user');
+            }
+            foreach ($levels as $i => $level) {
+                $levelUsers[$level] = $users[$i];
+            }
 
-        /** @var msOrderProduct $oProduct */
-        foreach ($order->getMany('Products') as $oProduct) {
-            $productsTotal += $oProduct->get('cost');
-            $pId = $oProduct->get('product_id');
-            if (!isset($products[$pId])) {
-                $products[$pId] = ['all' => $defaultRewards, 'self' => $defaultSelf];
-                /** @var msProduct $product */
-                if ($product = $oProduct->get('Product')) {
-                    $productRewards = $this->modx->fromJSON($product->get($this->config['levelRewardsProductField']));
-                    $products[$pId] = is_array($productRewards) ? $productRewards : [];
+            $levels['self'] = $defaultSelf;
+            $levelUsers['self'] = $order->get('user_id');
+
+            /** @var msOrderProduct $oProduct */
+            foreach ($order->getMany('Products') as $oProduct) {
+                $productsTotal += $oProduct->get('cost');
+                $pId = $oProduct->get('product_id');
+                if (!isset($products[$pId])) {
+                    $products[$pId] = ['all' => $defaultRewards, 'self' => $defaultSelf];
+                    /** @var msProduct $product */
+                    if ($product = $oProduct->get('Product')) {
+                        $productRewards = $this->modx->fromJSON($product->get($this->config['levelRewardsProductField']));
+                        $products[$pId] = is_array($productRewards) ? $productRewards : [];
+                    }
+                }
+                foreach ($levelUsers as $level => $user) {
+                    $rewardUsers[$user] = $rewardUsers[$user] ?? 0;
+                    $rewardUsers[$user] += $this->getAbsAmount($products[$pId][$level] ?? $levels[$level],
+                        $oProduct->get('cost'));
                 }
             }
-            foreach ($levelUsers as $level => $user) {
-                $rewardUsers[$user] = $rewardUsers[$user] ?? 0;
-                $rewardUsers[$user] += $this->getAbsAmount($products[$pId][$level] ?? $levels[$level],
-                    $oProduct->get('cost'));
-            }
-        }
 
-        if ($productsTotal < $orderTotal) {
-            $multiply = $productsTotal / $orderTotal;
+            if ($productsTotal < $orderTotal) {
+                $multiply = $productsTotal / $orderTotal;
+            }
+        } elseif ($action === refLog::ACTION_REVOKE) {
+            $logs = $this->modx->getCollection('refLog', ['order' => $order->get('id'), 'action' => refLog::ACTION_ORDER_INCREASE, 'status' => refLog::STATUS_ACTIVE]);
+            foreach ($logs as $log) {
+                $rewardUsers[$log->get('user')] = -1 * $log->get('amount');
+            }
         }
 
         foreach ($rewardUsers as $rewardUser => $amount) {
             $reward = $amount * $multiply;
             if ($reward) {
-                $this->updateAccount($rewardUser, refLog::ACTION_INCREASE, $reward, $order->get('id'));
+                $this->updateAccount($rewardUser, $action, $reward, $order->get('id'));
             }
         }
 
@@ -155,7 +165,7 @@ class referrals
     }
 
 
-    public function updateAccount($user, $action, $accountType, $delta, $order = 0)
+    public function updateAccount($user, $action, $accountType, $delta, $order = 0, $parent = null)
     {
         if (!class_exists('refAccount')) {
             $this->modx->loadClass('refAccount');
@@ -166,7 +176,15 @@ class referrals
         }
         $account->set('balance', $account->get('balance') + $delta);
         if ($account->save()) {
-            refLog::write($this->modx, $action, $user, $account->get('id'), $delta, $account->get('balance'), $order);
+            refLog::write($this->modx, [
+                'action' => $action,
+                'user' => $user,
+                'account' => $account->get('id'),
+                'delta' => $delta,
+                'balance' => $account->get('balance'),
+                'order' => $order,
+                'parent' => $parent,
+            ]);
         }
     }
 

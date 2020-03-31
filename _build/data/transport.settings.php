@@ -43,13 +43,23 @@ $tmp = array(
 
     'order_status_decrease' => array(
         'xtype' => 'numberfield',
-        'value' => 1,
-        'area' => 'referrals_main',
+        'value' => 2,
+        'area' => 'referrals_statuses',
     ),
     'order_status_increase' => array(
         'xtype' => 'numberfield',
         'value' => 4,
-        'area' => 'referrals_main',
+        'area' => 'referrals_statuses',
+    ),
+    'order_status_reward' => array(
+        'xtype' => 'numberfield',
+        'value' => 2,
+        'area' => 'referrals_statuses',
+    ),
+    'order_status_revoke' => array(
+        'xtype' => 'numberfield',
+        'value' => 4,
+        'area' => 'referrals_statuses',
     ),
 
 
