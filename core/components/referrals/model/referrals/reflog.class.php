@@ -12,6 +12,7 @@ class refLog extends xPDOSimpleObject {
     const ACTION_UNBAN = 'unban';
     const ACTION_REWARD_REGISTER = 'reward_register';
     const ACTION_ANNUL = 'annul';
+    const ACTION_ANNUL_REFERRAL = 'annul_referral';
     const ACTION_REWARD = 'reward';
     const ACTION_REVOKE = 'revoke';
 
@@ -53,7 +54,7 @@ class refLog extends xPDOSimpleObject {
             $log->fromArray([
                 'user' => $user,
                 'action' => $action,
-                'account' => $account,
+                'account' => $account ?? 0,
                 'delta' => $delta ?? 0,
                 'balance' => $balance ?? 0,
                 'order' => $order ?? 0,
