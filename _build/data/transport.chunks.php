@@ -13,6 +13,14 @@ $tmp = array(
 		'file' => 'pay',
 		'description' => '',
 	),
+    'referrals.users' => array(
+        'file' => 'users',
+        'description' => '',
+    ),
+    'referrals.usersManage' => array(
+        'file' => 'usersmanage',
+        'description' => '',
+    ),
 );
 
 // Save chunks for setup options
