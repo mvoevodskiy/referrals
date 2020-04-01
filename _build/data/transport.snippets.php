@@ -13,6 +13,14 @@ $tmp = array(
         'file' => 'pay',
         'description' => '',
     ),
+    'referralsUsers' => array(
+        'file' => 'users',
+        'description' => '',
+    ),
+    'referralsUsersManage' => array(
+        'file' => 'usersmanage',
+        'description' => '',
+    ),
 );
 
 foreach ($tmp as $k => $v) {
