@@ -6,6 +6,7 @@
         <field key="user" dbtype="int" precision="10" phptype="integer" null="false" default="0"/>
         <field key="master" dbtype="int" precision="10" phptype="integer" null="true" default="0"/>
         <field key="confirmed" dbtype="tinyint" precision="1" phptype="boolean" null="true" default="0"/>
+        <field key="createdon" dbtype="datetime" phptype="datetime" null="true"/>
         <field key="active" dbtype="tinyint" precision="1" phptype="boolean" null="true" default="1"/>
 
         <index alias="user" name="user" primary="false" unique="true" type="BTREE">
