@@ -58,6 +58,86 @@ Referrals.sendConfirmForm = function (e) {
     });
 };
 
+Referrals.manageShowDetails = function (e) {
+    id = 0;
+    if (typeof e === 'number') {
+        id = e;
+    } else {
+        e.preventDefault();
+        id = $(e.target).data('id');
+    }
+    $.post(window.location.href, {referrals_action: 'manage/master/details', id: id}, function (data) {
+        response = JSON.parse(data);
+        if (response.success) {
+            $('.referralsManageDetails').hide();
+            $('.referralsManageDetails' + id).show();
+            console.log(response);
+            data = response.object;
+            $('.referralsManageDetails' + data.master + '-invited').html(parseInt(data.confirmed || 0) + parseInt(data.notConfirmed || 0));
+            $('.referralsManageDetails' + data.master + '-confirmed').html(data.confirmed || 0);
+            $('.referralsManageDetails' + data.master + '-paid').html(data.paid || 0);
+            referrals = '';
+            template = $('#referralsManageDetailsUserTemplate').html();
+            for (referral of data.referrals) {
+                string = template;
+                for (let key in referral) {
+                    if (referral.hasOwnProperty(key)) {
+                        string = string.split('((' + key + '))').join(referral[key]);
+                    }
+                }
+                referrals = referrals + string;
+            }
+            $('.referralsManageDetails' + data.master + '-referrals').html(referrals);
+        } else {
+            Referrals.failure(response.msg);
+        }
+    })
+};
+
+Referrals.manageDetachReferral = function (e) {
+    e.preventDefault();
+    id = $(e.target).data('id');
+    $.post(window.location.href, {referrals_action: 'manage/referral/detach', id: id}, function (data) {
+        response = JSON.parse(data);
+        if (response.success) {
+            parent = document.getElementById('referralsManageDetailsUserRemove' + id);
+            if (parent) {
+                parent.parentNode.removeChild(parent);
+            }
+        } else {
+            Referrals.failure(response.msg);
+        }
+    })
+};
+
+Referrals.manageDetachReferral = function (e) {
+    e.preventDefault();
+    id = $(e.target).data('id');
+    $.post(window.location.href, {referrals_action: 'manage/referral/attach', id: id}, function (data) {
+        response = JSON.parse(data);
+        if (response.success) {
+            parent = document.getElementById('referralsManageDetailsUserRemove' + id);
+            if (parent) {
+                parent.parentNode.removeChild(parent);
+            }
+        } else {
+            Referrals.failure(response.msg);
+        }
+    })
+};
+
+Referrals.manageAttachReferral = function (e) {
+    e.preventDefault();
+    $.post(window.location.href, $(e.target).serializeArray(), function (data) {
+        // $.post(window.location.href, {referralApplyAccount: applyAccount, referralKey: key}, function (data) {
+        response = JSON.parse(data);
+        if (response.success) {
+            Referrals.manageShowDetails($(e.target).data('master'));
+        } else {
+            Referrals.failure(response.msg);
+        }
+    });
+};
 
 jQuery(document).ready(function($) {
     $('#referralsFormApplyAccount').on('submit', function (e) {
@@ -85,5 +165,8 @@ jQuery(document).ready(function($) {
     });
 
     $('#referralsConfirm').on('submit', Referrals.sendConfirmForm);
+    $('.referralsManageShowMore').on('click', Referrals.manageShowDetails);
+    $(document).on('click', '.referralsManageDetailsUserRemove', Referrals.manageDetachReferral);
+    $(document).on('submit', '.referralsManageDetailsUserAddForm', Referrals.manageAttachReferral);
 
 });

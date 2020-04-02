@@ -91,6 +91,32 @@ switch ($modx->event->name) {
             $modx->runSnippet('referralsConfirm');
         }
 
+        $action = $_POST['referrals_action'] ?? false;
+        $result = [];
+        if ($action) {
+            $modx->getService('error', 'error.modError');
+            $modx->setLogLevel(modX::LOG_LEVEL_ERROR);
+            $modx->setLogTarget('FILE');
+            $modx->error->message = null;
+            switch ($action) {
+                case 'manage/master/details':
+                    $result = $referrals->getMasterUser((int) $_POST['id']);
+                    break;
+
+                case 'manage/referral/detach':
+                    $result = $referrals->detachReferral((int) $_POST['id']);
+                    break;
+
+                case 'manage/referral/attach':
+                    $result = $referrals->attachReferral((int) $_POST['master'], (string) $_POST['email']);
+                    break;
+            }
+
+            $result = !empty($result) ? $modx->error->success('', $result) : $modx->error->failure('', $result);
+            @session_write_close();
+            exit($modx->toJSON($result));
+        }
+
 
         break;
 

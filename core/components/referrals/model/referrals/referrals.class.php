@@ -318,6 +318,107 @@ class referrals
         return $user;
     }
 
+    public function getMasterUser($user = null)
+    {
+        if (!$user) {
+            $user = $this->modx->getAuthenticatedUser();
+        } elseif (is_numeric($user)) {
+            $user = $this->modx->getObject('modUser', $user);
+        }
+
+        $this->modx->log(1, gettype($user));
+        $result = ['master' => $user->id];
+        if ($user) {
+            $q = $this->modx->newQuery('refUser');
+            $q->innerJoin('modUserProfile', 'Profile', 'Profile.internalKey = refUser.user');
+            $q->select(['Profile.*', 'refUser.*']);
+            $q->where(['refUser.master' => $user->get('id')]);
+            $q->prepare();
+            $q->stmt->execute();
+            $result['referrals'] = $q->stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            $q = $this->modx->newQuery('refUser');
+            $q->select(['COUNT(id) AS `count`', 'confirmed']);
+            $q->where(['refUser.master' => $user->get('id')]);
+            $q->groupby('confirmed');
+            $q->sortby('confirmed');
+            $q->prepare();
+            $q->stmt->execute();
+            $states = $q->stmt->fetchAll(PDO::FETCH_ASSOC);
+            foreach ($states as $state) {
+                if ($state['confirmed']) {
+                    $result['confirmed'] = $state['count'];
+                } else {
+                    $result['notConfirmed'] = $state['count'];
+                }
+            }
+
+            $q = $this->modx->newQuery('msOrder');
+            $q->innerJoin('refUser', 'refUser', 'msOrder.user_id = refUser.user');
+            $q->select('SUM(cost) as cost');
+            $q->where(['refUser.master' => $user->get('id')]);
+            $q->prepare();
+            $q->stmt->execute();
+            $rawCost = $q->stmt->fetchAll(PDO::FETCH_ASSOC);
+            $result['paid'] = $rawCost ? $rawCost[0]['cost'] : 0;
+
+        }
+
+        return $result;
+    }
+
+    public function detachReferral($user = null)
+    {
+        return true;
+        if (!$user) {
+            $user = $this->modx->getAuthenticatedUser();
+        } elseif (is_numeric($user)) {
+            $user = $this->modx->getObject('modUser', $user);
+        }
+
+        $this->modx->log(1, gettype($user));
+        $result = ['master' => $user->id];
+        if ($user && $referral = $this->modx->getObject('refUser', ['user' => $user->get('id')])) {
+            refLog::write($this->modx, ['user' => $user->id, 'action' => refLog::ACTION_DETACH, 'by' => $this->modx->user->id]);
+            $referral->set('master', 0);
+            return $referral->save();
+
+        }
+        return false;
+    }
+
+    public function attachReferral($master, $user)
+    {
+//        return true;
+        if (is_numeric($master)) {
+            $master = $this->modx->getObject('modUser', $master);
+        }
+        if (!$user) {
+            $user = $this->modx->getAuthenticatedUser();
+        } elseif (is_numeric($user)) {
+            $user = $this->modx->getObject('modUser', $user);
+        } elseif (is_string($user)) {
+            $q = $this->modx->newQuery('modUser');
+            $q->innerJoin('modUserProfile', 'Profile', 'Profile.internalKey = modUser.id');
+            $q->where(['Profile.phone' => $user, 'OR:Profile.email:=' => $user]);
+            $user = $this->modx->getObject('modUser', $q);
+        }
+
+        if ($user && $master) {
+            if (!$this->modx->getObject('refUser', ['master' => $master->id, 'user' => $user->id])) {
+                $ref = $this->modx->newObject('refUser', ['master' => $master->id, 'user' => $user->id]);
+                if ($ref->save()) {
+                    refLog::write($this->modx,
+                        ['user' => $user->id, 'action' => refLog::ACTION_ATTACH, 'by' => $this->modx->user->id]);
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+
+
 
     public function getBalance($acType, $user = null)
     {

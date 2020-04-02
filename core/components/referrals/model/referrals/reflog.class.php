@@ -10,6 +10,8 @@ class refLog extends xPDOSimpleObject {
     const ACTION_ORDER_DECREASE = 'order_decrease';
     const ACTION_BAN = 'ban';
     const ACTION_UNBAN = 'unban';
+    const ACTION_ATTACH = 'attach';
+    const ACTION_DETACH = 'detach';
     const ACTION_REWARD_REGISTER = 'reward_register';
     const ACTION_ANNUL = 'annul';
     const ACTION_ANNUL_REFERRAL = 'annul_referral';
