@@ -26,24 +26,22 @@ $tmp = array(
         'value' => '{}',
         'area' => 'referrals_values',
     ),
-
-
     'reward_register_master' => array(
         'xtype' => 'numberfield',
         'value' => 0,
-        'area' => 'referrals_main',
+        'area' => 'referrals_values',
     ),
     'reward_register_user' => array(
         'xtype' => 'numberfield',
         'value' => 0,
-        'area' => 'referrals_main',
+        'area' => 'referrals_values',
     ),
 
 
 
     'order_status_decrease' => array(
         'xtype' => 'numberfield',
-        'value' => 2,
+        'value' => 1,
         'area' => 'referrals_statuses',
     ),
     'order_status_increase' => array(
