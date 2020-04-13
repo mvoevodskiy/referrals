@@ -45,7 +45,7 @@ class referrals
 
             'confirmField' => $this->modx->getOption('referrals_use_limit_product_field', null, 'phone'),
             'useLimitProductField' => $this->modx->getOption('referrals_use_limit_product_field', null, '100%'),
-            'levelRewardsProductField' => $modx->fromJSON($this->modx->getOption('referrals_level_rewards_productField', null, '{}')),
+            'levelRewardsProductField' => $this->modx->getOption('referrals_level_rewards_product_field', null, ''),
 
             'ttl' => [
                 'cookie' => $this->modx->getOption('referrals_cookie_ttl', null, 30),
@@ -103,53 +103,66 @@ class referrals
         $products = [];
         $users = [];
         $multiply = 1;
+        $accountType = $this->getAccountTypeFromOrder($order);
 
         if ($action === refLog::ACTION_REWARD) {
             $productsTotal = 0;
             $orderTotal = $order->get('cost') - $order->get('delivery_cost');
 
             $defaultRewards = $this->config['levelRewards'];
-            $defaultSelf = $defaultRewards['self'] ?? 0;
-            unset($defaultRewards['self']);
+//            $this->modx->log(1, 'DEFAULT REWARDS ' . print_r($defaultRewards, 1));
             $levels = array_keys($defaultRewards);
+            foreach(array_keys($levels, 'self') as $key){
+                unset($levels[$key]);
+            }
             sort($levels);
 
             /** @var refUser $current */
             $current = $initiator;
-            while ($current = $current->Master && count($users) < count($levels)) {
+            while (($current = $current->Master) && count($users) < count($levels)) {
                 $users[] = $current->get('user');
             }
             foreach ($levels as $i => $level) {
                 $levelUsers[$level] = $users[$i];
             }
 
-            $levels['self'] = $defaultSelf;
+//            $levels['self'] = $defaultSelf;
+            $levels[] = 'self';
             $levelUsers['self'] = $order->get('user_id');
+
+//            $this->modx->log(1, 'USERS ' . print_r($users, 1));
+//            $this->modx->log(1, 'LEVELS ' . print_r($levels, 1));
+//            $this->modx->log(1, 'LEVEL USERS ' . print_r($levelUsers, 1));
 
             /** @var msOrderProduct $oProduct */
             foreach ($order->getMany('Products') as $oProduct) {
                 $productsTotal += $oProduct->get('cost');
                 $pId = $oProduct->get('product_id');
                 if (!isset($products[$pId])) {
-                    $products[$pId] = ['all' => $defaultRewards, 'self' => $defaultSelf];
+                    $products[$pId] = $defaultRewards;
                     /** @var msProduct $product */
-                    if ($product = $oProduct->get('Product')) {
+                    if ($this->config['levelRewardsProductField'] && $product = $oProduct->getOne('Product')) {
+//                        $this->modx->log(1, 'FIELD ' . $this->config['levelRewardsProductField']);
+//                        $this->modx->log(1, 'PRODUCT FIELD ' . $product->get($this->config['levelRewardsProductField']));
                         $productRewards = $this->modx->fromJSON($product->get($this->config['levelRewardsProductField']));
-                        $products[$pId] = is_array($productRewards) ? $productRewards : [];
+//                        $this->modx->log(1, 'PRODUCT REWARDS ' . print_r($productRewards, 1));
+                        if (is_array($productRewards)) {
+                            $products[$pId] = array_merge($products[$pId], $productRewards);
+                        }
                     }
                 }
                 foreach ($levelUsers as $level => $user) {
                     $rewardUsers[$user] = $rewardUsers[$user] ?? 0;
-                    $rewardUsers[$user] += $this->getAbsAmount($products[$pId][$level] ?? $levels[$level],
+                    $rewardUsers[$user] += $this->getAbsAmount(isset($products[$pId][$level])
+                        ? $products[$pId][$level] :
+                        $defaultRewards[$level],
                         $oProduct->get('cost'));
                 }
             }
 
-            if ($productsTotal < $orderTotal) {
-                $multiply = $productsTotal / $orderTotal;
-            }
+            $multiply = $orderTotal / $productsTotal;
         } elseif ($action === refLog::ACTION_REVOKE) {
-            $logs = $this->modx->getCollection('refLog', ['order' => $order->get('id'), 'action' => refLog::ACTION_ORDER_INCREASE, 'status' => refLog::STATUS_ACTIVE]);
+            $logs = $this->modx->getCollection('refLog', ['order' => $order->get('id'), 'action' => refLog::ACTION_REWARD, 'status' => refLog::STATUS_ACTIVE]);
             foreach ($logs as $log) {
                 $rewardUsers[$log->get('user')] = -1 * $log->get('amount');
             }
@@ -158,7 +171,7 @@ class referrals
         foreach ($rewardUsers as $rewardUser => $amount) {
             $reward = $amount * $multiply;
             if ($reward) {
-                $this->updateAccount($rewardUser, $action, $reward, $order->get('id'));
+                $this->updateAccount($rewardUser, $action, $accountType, $reward, $order->get('id'));
             }
         }
 
@@ -168,6 +181,9 @@ class referrals
 
     public function updateAccount($user, $action, $accountType, $delta, $order = 0, $parent = null)
     {
+        if (!$accountType) {
+            return;
+        }
         if (!class_exists('refAccount')) {
             $this->modx->loadClass('refAccount');
         }
@@ -326,7 +342,6 @@ class referrals
             $user = $this->modx->getObject('modUser', $user);
         }
 
-        $this->modx->log(1, gettype($user));
         $result = ['master' => $user->id];
         if ($user) {
             $q = $this->modx->newQuery('refUser');
@@ -369,7 +384,7 @@ class referrals
 
     public function detachReferral($user = null)
     {
-        return true;
+//        return true;
         if (!$user) {
             $user = $this->modx->getAuthenticatedUser();
         } elseif (is_numeric($user)) {
@@ -381,10 +396,15 @@ class referrals
         if ($user && $referral = $this->modx->getObject('refUser', ['user' => $user->get('id')])) {
             refLog::write($this->modx, ['user' => $user->id, 'action' => refLog::ACTION_DETACH, 'by' => $this->modx->user->id]);
             $referral->set('master', 0);
-            return $referral->save();
+            if ($referral->save()) {
+                return true;
+            } else {
+                return $this->modx->lexicon('referrals_user_error');
+            }
 
+        } else {
+            return $this->modx->lexicon('referrals_user_nf');
         }
-        return false;
     }
 
     public function attachReferral($master, $user)
@@ -405,16 +425,22 @@ class referrals
         }
 
         if ($user && $master) {
-            if (!$this->modx->getObject('refUser', ['master' => $master->id, 'user' => $user->id])) {
+            if (!$this->modx->getObject('refUser', ['user' => $user->id])) {
                 $ref = $this->modx->newObject('refUser', ['master' => $master->id, 'user' => $user->id]);
-                if ($ref->save()) {
-                    refLog::write($this->modx,
-                        ['user' => $user->id, 'action' => refLog::ACTION_ATTACH, 'by' => $this->modx->user->id]);
-                    return true;
-                }
+            } elseif ($ref = $this->modx->getObject('refUser', ['master' => 0, 'user' => $user->id])) {
+                $ref->set('master', $master->id);
             }
+            if (!empty($ref) && $ref->save()) {
+                refLog::write($this->modx,
+                    ['user' => $user->id, 'action' => refLog::ACTION_ATTACH, 'by' => $this->modx->user->id]);
+                return true;
+            } else {
+                return $this->modx->lexicon('referrals_user_error');
+            }
+
+        } else {
+            return $this->modx->lexicon('referrals_user_nf');
         }
-        return false;
     }
 
 
@@ -496,11 +522,22 @@ class referrals
     public function getAbsAmount($amount, $max)
     {
         if (strpos($amount, '%') !== false) {
-            $amount = (int) substr($amount, 1);
+            $amount = (int) substr($amount, 0, -1);
             $amount = $max * $amount / 100;
 
         }
         return min(floatval($amount), $max);
+    }
+
+    public function getAccountTypeFromOrder(msOrder $order)
+    {
+        $accountType = $this->config['accountMoney'];
+        $props = $order->get('properties');
+//        $this->modx->log(1, 'PROPS ' . print_r($props, 1));
+        if (isset($props['referrals']) && isset($props['referrals']['useFromAccount'])) {
+            $accountType = $props['referrals']['useFromAccount']['type'] ?? $accountType;
+        }
+        return $accountType;
     }
 
 
@@ -515,7 +552,7 @@ class referrals
                 window.Referrals = window.Referrals || {};';
         if ($jsParams) {
                 $script .= ' Referrals.config =' . json_encode($jsParams, JSON_PRETTY_PRINT);
-                $this->modx->log(1, json_encode($jsParams, JSON_PRETTY_PRINT));
+//                $this->modx->log(1, json_encode($jsParams, JSON_PRETTY_PRINT));
         }
         $script .= '</script>';
         $this->modx->regClientScript($script);
