@@ -89,7 +89,7 @@ Referrals.manageShowDetails = function (e) {
             }
             $('.referralsManageDetails' + data.master + '-referrals').html(referrals);
         } else {
-            Referrals.failure(response.msg);
+            Referrals.failure(response.message);
         }
     })
 };
@@ -105,23 +105,7 @@ Referrals.manageDetachReferral = function (e) {
                 parent.parentNode.removeChild(parent);
             }
         } else {
-            Referrals.failure(response.msg);
-        }
-    })
-};
-
-Referrals.manageDetachReferral = function (e) {
-    e.preventDefault();
-    id = $(e.target).data('id');
-    $.post(window.location.href, {referrals_action: 'manage/referral/attach', id: id}, function (data) {
-        response = JSON.parse(data);
-        if (response.success) {
-            parent = document.getElementById('referralsManageDetailsUserRemove' + id);
-            if (parent) {
-                parent.parentNode.removeChild(parent);
-            }
-        } else {
-            Referrals.failure(response.msg);
+            Referrals.failure(response.message);
         }
     })
 };
@@ -134,22 +118,22 @@ Referrals.manageAttachReferral = function (e) {
         if (response.success) {
             Referrals.manageShowDetails($(e.target).data('master'));
         } else {
-            Referrals.failure(response.msg);
+            Referrals.failure(response.message);
         }
     });
 };
 
 jQuery(document).ready(function($) {
-    $('#referralsFormApplyAccount').on('submit', function (e) {
+    $('#referralsBtnApplyAccount').on('click', function (e) {
         e.preventDefault();
-        var applyAccountInput = $('#referrals_apply_account_input');
-        var applyAccount = parseInt(applyAccountInput.val());
-        var ctxInput = $('#referrals_ctx_input');
-        var ctx = parseInt(ctxInput.val());
-        var max = parseInt(applyAccountInput.parent().parent().data('max'));
-        if (applyAccount <= max || Referrals.config.costCheckByServer) {
+        var input = $('#referrals_apply_account_input');
+        var referralApplyAccount = parseInt(input.val());
+        var ctx = $(input).data('ctx');
+        var referralKey = parseInt($(input).data('referralKey'));
+        var max = parseInt($(input).data('max'));
+        if (referralApplyAccount <= max || Referrals.config.costCheckByServer) {
             var key =
-                $.post(window.location.href, $(e.target).serializeArray(), function (data) {
+                $.post(window.location.href, {referrals_action: 'account/apply', referralApplyAccount, ctx, referralKey}, function (data) {
                 // $.post(window.location.href, {referralApplyAccount: applyAccount, referralKey: key}, function (data) {
                     response = JSON.parse(data);
                     if (response.success) {
