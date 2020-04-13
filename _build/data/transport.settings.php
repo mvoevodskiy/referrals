@@ -61,11 +61,11 @@ $tmp = array(
     ),
 
 
-    'confirm_field' => array(
-        'xtype' => 'textfield',
-        'value' => 'phone',
-        'area' => 'referrals_fields',
-    ),
+//    'confirm_field' => array(
+//        'xtype' => 'textfield',
+//        'value' => 'phone',
+//        'area' => 'referrals_fields',
+//    ),
     'level_rewards_product_field' => array(
         'xtype' => 'textfield',
         'value' => '',
