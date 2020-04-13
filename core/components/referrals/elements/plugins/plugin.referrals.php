@@ -47,17 +47,6 @@ switch ($modx->event->name) {
 
         /**
          *
-         * Отправка кода / подтверждение
-         *
-         */
-        if ($_GET['referralsConfirm'] ?? false) {
-            $ref->confirmCodeSend();
-        } elseif ($_GET['referralsConfirmCheck'] ?? false) {
-            $ref->confirmCodeCheck();
-        }
-
-        /**
-         *
          * Установка величины скидки к заказу
          *
          */
