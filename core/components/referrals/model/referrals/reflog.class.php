@@ -63,6 +63,10 @@ class refLog extends xPDOSimpleObject {
                 'parent' => $parent ?? 0,
                 'status' => $status ?? self::STATUS_ACTIVE,
             ]);
+            if ($xpdo instanceof modX) {
+                $log->set('ctx', $xpdo->context->key);
+                $log->set('occurredby', $xpdo->user->id);
+            }
             if ($log->save()) {
                 if ($parent) {
                     self::revoke($xpdo, $parent);

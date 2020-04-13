@@ -55,6 +55,7 @@
         <field key="user" dbtype="int" precision="10" phptype="integer" null="true" default="0"/>
         <field key="parent" dbtype="int" precision="10" phptype="integer" null="true" default="0"/>
         <field key="action" dbtype="varchar" precision="20" phptype="string" null="false" default=""/>
+        <field key="ctx" dbtype="varchar" precision="255" phptype="string" null="false" default=""/>
         <field key="status" dbtype="varchar" precision="20" phptype="string" null="false" default=""/>
 <!--        <field key="referral" dbtype="int" precision="10" phptype="integer" null="true" default="0"/>-->
         <field key="account" dbtype="int" precision="10" phptype="integer" null="true" default="0"/>
@@ -62,6 +63,7 @@
         <field key="balance"  dbtype="decimal" precision="12,2" phptype="float" null="true" default="0"/>
         <field key="occurred" dbtype="datetime" phptype="datetime" null="true"/>
         <field key="order" dbtype="int" precision="10" phptype="integer" null="true" default="0"/>
+        <field key="occurredby" dbtype="int" precision="10" phptype="integer" null="true" default="0"/>
         <index alias="user" name="user" primary="false" unique="false" type="BTREE">
             <column key="user" length="" collation="A" null="false"/>
         </index>
