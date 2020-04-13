@@ -21,8 +21,9 @@
 
         <aggregate alias="User" class="modUser" local="user" foreign="id" cardinality="one" owner="foreign"/>
         <aggregate alias="UserProfile" class="modUserProfile" local="user" foreign="internalKey" cardinality="one" owner="foreign"/>
-        <aggregate alias="Master" class="modUser" local="master" foreign="id" cardinality="one" owner="foreign"/>
-        <aggregate alias="MasterProfile" class="modUserProfile" local="master" foreign="internalKey" cardinality="one" owner="foreign"/>
+        <aggregate alias="MasterUser" class="modUser" local="master" foreign="id" cardinality="one" owner="foreign"/>
+        <aggregate alias="MasterUserProfile" class="modUserProfile" local="master" foreign="internalKey" cardinality="one" owner="foreign"/>
+        <aggregate alias="Master" class="refUser" local="master" foreign="user" cardinality="one" owner="foreign"/>
 
     </object>
 
