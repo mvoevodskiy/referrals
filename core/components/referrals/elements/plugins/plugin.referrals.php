@@ -14,6 +14,7 @@ if (!$referrals = $modx->getService('referrals', 'referrals', $modx->getOption('
 ) {
     return 'Could not load referrals class!';
 }
+$modx->loadClass('refLog');
 $isAjax = !empty($_SERVER['HTTP_X_REQUESTED_WITH']) && $_SERVER['HTTP_X_REQUESTED_WITH'] == 'XMLHttpRequest';
 
 $defaultApplyAccount = ['sum' => 0, 'type' => $referrals->config['accountMoney']];
@@ -61,7 +62,7 @@ switch ($modx->event->name) {
          *
          */
         $applyRefAccount = (int)$modx->getOption('referralApplyAccount', $_POST, -1);
-        if ($applyRefAccount >= 0) {
+        if (empty($_POST['ms2_action']) && $applyRefAccount >= 0) {
             $ctx = $modx->getOption('ctx', $_POST, 'web');
             /** @var miniShop2 $ms2 */
             $ms2 = $modx->getService('minishop2');
@@ -112,7 +113,7 @@ switch ($modx->event->name) {
                     break;
             }
 
-            $result = !empty($result) ? $modx->error->success('', $result) : $modx->error->failure('', $result);
+            $result = $result === true || is_array($result) ? $modx->error->success('', $result) : $modx->error->failure(is_string($result) ? $result : '');
             @session_write_close();
             exit($modx->toJSON($result));
         }
@@ -146,7 +147,11 @@ switch ($modx->event->name) {
 //                $modx->log(1, 'APPLY ACCOUNT: ' . $applySum);
         $cost = $modx->event->returnedValues['cost'] ?? $cost;
 
-        if ($applySum) {
+        if ($cost && $applySum > $cost) {
+            $applySum = $cost;
+            $session['applyAccount']['sum'] = $cost;
+        }
+        if ($cost && $applySum) {
             $modx->event->returnedValues['cost'] = $cost - $applySum;
 //            $modx->log(1, 'NEW COST: ' . $modx->event->returnedValues['cost']);
         }
@@ -157,11 +162,9 @@ switch ($modx->event->name) {
         /** @var int $sum */
         /** @var int $type */
         extract($account);
-        if ($sum) {
-            /** @var msOrder $msOrder */
-            $properties = $msOrder->get('properties');
-            $msOrder->set('properties', $referrals->mergeOrderOptions($properties, ['useFromAccount' => $account]));
-        }
+        /** @var msOrder $msOrder */
+        $properties = $msOrder->get('properties');
+        $msOrder->set('properties', $referrals->mergeOrderOptions($properties, ['useFromAccount' => $account]));
 
         break;
 
@@ -172,8 +175,7 @@ switch ($modx->event->name) {
         /** @var msOrder $msOrder */
         $properties = $msOrder->get('properties');
         $refProperties = $properties[$propsElem];
-        if ($refProperties['useFromAccount']) {
-            $sum = $refProperties['useFromAccount']['sum'];
+        if ($refProperties['useFromAccount'] && $sum = $refProperties['useFromAccount']['sum']) {
             $delivery = $msOrder->get('delivery_cost');
             if ($sum) {
                 $msOrder->set('delivery_cost', $delivery + $sum);
