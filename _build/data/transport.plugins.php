@@ -41,7 +41,7 @@ foreach ($tmp as $k => $v) {
             $event->fromArray(array_merge(
                 array(
                     'event' => $k2,
-                    'priority' => 0,
+//                    'priority' => 0,
                     'propertyset' => 0,
                 ), $v2
             ), '', true, true);
