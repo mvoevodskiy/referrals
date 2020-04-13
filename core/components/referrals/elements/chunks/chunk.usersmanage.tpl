@@ -26,7 +26,7 @@
                 {$i}
             </td>
             <td>
-                <a class="referralsManageShowMore" data-id="{$user.master}">{$user.fullname}</a>
+                <a class="referralsManageShowMore" data-id="{$user.master}" style="cursor: pointer; text-decoration-line: underline;">{$user.fullname}</a>
             </td>
             <td>
                 {$user.count ? $user.count : 0}
@@ -79,5 +79,5 @@
     </tbody>
 </table>
 <div id="referralsManageDetailsUserTemplate" style="display: none">
-    <div id=" referralsManageDetailsUserRemove((user))">((fullname))<span class="referralsManageDetailsUserRemove" style="color: red" data-id="((user))"> [x] </span></div>
+    <div id="referralsManageDetailsUserRemove((user))">((fullname))<span class="referralsManageDetailsUserRemove" style="color: red" data-id="((user))"> [x] </span></div>
 </div>
