@@ -14,7 +14,7 @@ $pdoTools = $modx->getService('pdoFetch');
 $ms2 = $modx->getService('minishop2');
 
 $tpl = $modx->getOption('tpl', $scriptProperties, 'tpl.referrals.pay');
-$ctx = $modx->getOption('ctx', $scriptProperties, 'web');
+$ctx = $modx->getOption('ctx', $scriptProperties, $modx->context->key);
 $groups = $modx->getOption('groups', $scriptProperties, '');
 $accountId = $modx->getOption('accountId', $scriptProperties, $referrals->config['accountMoney']);
 $jsParams = $modx->getOption('jsParams', $scriptProperties, '');
