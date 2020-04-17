@@ -1,6 +1,10 @@
 <?php
 /** @var modX $modx */
 
+if ($modx->context->key === 'mgr') {
+    return;
+}
+
 $session = & $_SESSION['referrals'];
 $key = $modx->getOption('referralKey', $_POST, false);
 
