@@ -132,17 +132,16 @@ jQuery(document).ready(function($) {
         var referralKey = parseInt($(input).data('referralKey'));
         var max = parseInt($(input).data('max'));
         if (referralApplyAccount <= max || Referrals.config.costCheckByServer) {
-            var key =
-                $.post(window.location.href, {referrals_action: 'account/apply', referralApplyAccount, ctx, referralKey}, function (data) {
-                // $.post(window.location.href, {referralApplyAccount: applyAccount, referralKey: key}, function (data) {
-                    response = JSON.parse(data);
-                    if (response.success) {
-                        miniShop2.Order.getcost();
-                        Referrals.success('Сумма заказа уменьшена');
-                    } else {
-                        Referrals.failure(response.msg);
-                    }
-                });
+            $.post(window.location.href, {referrals_action: 'account/apply', referralApplyAccount, ctx, referralKey}, function (data) {
+            // $.post(window.location.href, {referralApplyAccount: applyAccount, referralKey: key}, function (data) {
+                response = JSON.parse(data);
+                if (response.success) {
+                    miniShop2.Order.getcost();
+                    Referrals.success('Сумма заказа уменьшена');
+                } else {
+                    Referrals.failure(response.msg);
+                }
+            });
         } else {
             Referrals.failure('Вы ввели сумму, превышающую доступную для использования');
         }
