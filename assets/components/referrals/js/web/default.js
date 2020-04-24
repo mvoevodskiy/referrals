@@ -129,7 +129,7 @@ jQuery(document).ready(function($) {
         var input = $('#referrals_apply_account_input');
         var referralApplyAccount = parseInt(input.val());
         var ctx = $(input).data('ctx');
-        var referralKey = parseInt($(input).data('referralKey'));
+        var referralKey = $(input).data('referralkey');
         var max = parseInt($(input).data('max'));
         if (referralApplyAccount <= max || Referrals.config.costCheckByServer) {
             $.post(window.location.href, {referrals_action: 'account/apply', referralApplyAccount, ctx, referralKey}, function (data) {
@@ -137,9 +137,22 @@ jQuery(document).ready(function($) {
                 response = JSON.parse(data);
                 if (response.success) {
                     miniShop2.Order.getcost();
-                    Referrals.success('Сумма заказа уменьшена');
+                    $('#referrals_apply_error_message').hide();
+                    var msg = 'Сумма заказа уменьшена на ' + response.data.applied + ' руб.';
+                    if (response.data.applied > 0) {
+                        Referrals.success(msg);
+                        $('#referrals_apply_success_message').html(msg).show();
+                    } else {
+                        $('#referrals_apply_success_message').html(msg).hide();
+                    }
                 } else {
                     Referrals.failure(response.msg);
+                    $('#referrals_apply_success_message').hide();
+                    $('#referrals_apply_error_message').html(response.msg).show();
+                }
+                document.dispatchEvent(new CustomEvent('referrals_pay_set', {details: response}));
+                if (typeof $ === 'function') {
+                    $(document).trigger('referrals_pay_set_jq', response);
                 }
             });
         } else {
