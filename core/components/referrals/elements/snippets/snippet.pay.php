@@ -15,18 +15,21 @@ $ms2 = $modx->getService('minishop2');
 
 $tpl = $modx->getOption('tpl', $scriptProperties, 'tpl.referrals.pay');
 $ctx = $modx->getOption('ctx', $scriptProperties, $modx->context->key);
+$msCtx = $modx->getOption('msCtx', $scriptProperties, $ctx);
 $groups = $modx->getOption('groups', $scriptProperties, '');
 $accountId = $modx->getOption('accountId', $scriptProperties, $referrals->config['accountMoney']);
 $jsParams = $modx->getOption('jsParams', $scriptProperties, '');
+
+$scriptProperties['accountMoney'] = $accountId;
+// $modx->log(1, "SNIPPET. CTX $ctx MSCTX $msCtx");
 
 $ms2->initialize($ctx);
 $key = md5($modx->toJSON($scriptProperties));
 $_SESSION['referrals']['pay'][$key] = $scriptProperties;
 
-if (!$user = $referrals->getUser()) {
-    return;
-}
-if (!empty($groups)) {
+$user = $referrals->getUser();
+$sameGroup = false;
+if ($user && !empty($groups)) {
     $sameGroup = false;
     $groups = explode(',', $groups);
     $userGroups = $user->getUserGroupNames();
@@ -50,11 +53,12 @@ $data = [
     'ctx' => $ctx,
 ];
 $cart_status = $ms2->cart->status();
-
-$data['balance'] = $referrals->getBalance($accountId);
-$data['max'] = $referrals->getAvailableForUse($accountId, true, $ctx);
-if (empty($jsParams) and !$data['max']) {
-    return;
+if ($user && $sameGroup) {
+    $data['balance'] = $referrals->getBalance($accountId);
+    $data['max'] = $referrals->getAvailableForUse($accountId, true, $msCtx);
+    if (empty($jsParams) and !$data['max']) {
+        $data['max'] = 0;
+    }
 }
 $output = $pdoTools->getChunk($tpl, $data);
 $referrals->registerScripts($jsParams);
