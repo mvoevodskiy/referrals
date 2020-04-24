@@ -1,7 +1,7 @@
-{if $max > '0' and $balance > '0'}
+<input type="hidden" name="referralKey" value="{$key}">
+{if $max > 0 and $balance > 0}
 <div id="referrals_pay_outer">
     <p>Ваш баланс {$balance} {'ms2_frontend_currency' | lexicon}. Для оплаты заказа Вы можете использовать максимум {$max} {'ms2_frontend_currency' | lexicon}</p>
-    <input type="hidden" name="referralKey" value="{$key}">
     <input type="hidden" name="ctx" value="{$ctx}" id="referrals_ctx_input" >
     <div class="form-group">
         <label for="referrals_apply_account_input">Укажите, какую сумму использовать</label>
