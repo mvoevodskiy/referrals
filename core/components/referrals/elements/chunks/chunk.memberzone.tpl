@@ -2,7 +2,7 @@
     {if $confirmed ?}
         <ul>
             <li>Баланс: {$balanceMoney}</li>
-            <li>Приглашено: {$balanceReferrals}</li>
+            <li>Приглашено подтвержденных: {$balanceReferrals}</li>
             <li>
                 Приглашенные пользователи:
                 <ul>
@@ -11,7 +11,7 @@
                     'innerJoin' => '{"refUser":{"class":"refUser", "on":"refUser.user = modUser.id and refUser.master = \'' ~ $_modx->user.id ~ '\'"}}',
                     'select' => '{"refUser":"confirmed"}',
                     'groupby' => '',
-                    'tpl' => '@INLINE {$fullname ?: $username}',
+                    'tpl' => '@INLINE <span style="{if !$confirmed ?}color: gray{/if}"> {$fullname ?: $username}</span> ',
                     'showLog' => false,
                     ])}
                 </ul>
