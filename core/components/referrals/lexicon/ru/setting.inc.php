@@ -6,6 +6,7 @@ $_lang['area_referrals_values'] = 'Значения';
 $_lang['area_referrals_statuses'] = 'Статусы заказов';
 $_lang['area_referrals_fields'] = 'Поля';
 $_lang['area_referrals_ttl'] = 'Срок жизни';
+$_lang['area_referrals_cookie'] = 'Cookie';
 
 $_lang['setting_referrals_some_setting'] = 'Какая-то настройка';
 $_lang['setting_referrals_some_setting_desc'] = 'Это описание для какой-то настройки';
@@ -26,6 +27,7 @@ $_lang['setting_referrals_level_rewards_product_field'] = 'Поле товара
 $_lang['setting_referrals_use_limit_product_field'] = 'Поле товара для лимита использования бонусов';
 $_lang['setting_referrals_var_url'] = 'Имя переменной в URL';
 $_lang['setting_referrals_var_cookie'] = 'Имя cookie';
+$_lang['setting_referrals_cookie_domain'] = 'Домен для cookie';
 $_lang['setting_referrals_action_script'] = 'URI скрипта обработки AJAX-запросов ';
 $_lang['setting_referrals_frontend_js'] = 'URI файла JavaScript';
 $_lang['setting_referrals_sms_login'] = 'Логин от сервиса sms.ru';

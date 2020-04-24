@@ -85,7 +85,12 @@ $tmp = array(
     'var_cookie' => array(
         'xtype' => 'textfield',
         'value' => 'referrals',
-        'area' => 'referrals_main',
+        'area' => 'referrals_cookie',
+    ),
+    'cookie_domain' => array(
+        'xtype' => 'textfield',
+        'value' => '',
+        'area' => 'referrals_cookie',
     ),
     'action_script' => array(
         'xtype' => 'textfield',
