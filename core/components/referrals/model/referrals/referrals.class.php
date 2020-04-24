@@ -37,6 +37,9 @@ class referrals
             'snippetsPath' => $corePath . 'elements/snippets/',
             'processorsPath' => $corePath . 'processors/',
 
+            'ctx' => $this->modx->context->key,
+            'msCtx' => $this->modx->context->key,
+
             'accountReferrals' => $this->modx->getOption('referrals_account_type_id_referrals'),
             'accountMoney' => $this->modx->getOption('referrals_account_type_id_money'),
 
@@ -46,6 +49,12 @@ class referrals
             'confirmField' => $this->modx->getOption('referrals_use_limit_product_field', null, 'phone'),
             'useLimitProductField' => $this->modx->getOption('referrals_use_limit_product_field', null, '100%'),
             'levelRewardsProductField' => $this->modx->getOption('referrals_level_rewards_product_field', null, ''),
+
+            'cookie' => [
+                'domain' => $this->modx->getOption('referrals_cookie_domain', null, ''),
+                'var' => $this->modx->getOption('referrals_var_cookie', null, ''),
+            ],
+            'urlVar' => $this->modx->getOption('referrals_var_url', null, 30),
 
             'ttl' => [
                 'cookie' => $this->modx->getOption('referrals_cookie_ttl', null, 30),
@@ -104,6 +113,7 @@ class referrals
         $users = [];
         $multiply = 1;
         $accountType = $this->getAccountTypeFromOrder($order);
+//        $this->modx->log(1, 'REWARD ORDER. ACTION ' . $action . ' ACCOUNT TYPE ' . $accountType);
 
         if ($action === refLog::ACTION_REWARD) {
             $productsTotal = 0;
@@ -119,11 +129,13 @@ class referrals
 
             /** @var refUser $current */
             $current = $initiator;
-            while (($current = $current->Master) && count($users) < count($levels)) {
+            while ($current->master > 0 && ($current = $current->Master) && count($users) < count($levels)) {
                 $users[] = $current->get('user');
             }
             foreach ($levels as $i => $level) {
-                $levelUsers[$level] = $users[$i];
+                if ($users[$i]) {
+                    $levelUsers[$level] = $users[$i];
+                }
             }
 
 //            $levels['self'] = $defaultSelf;
@@ -142,13 +154,17 @@ class referrals
                     $products[$pId] = $defaultRewards;
                     /** @var msProduct $product */
                     if ($this->config['levelRewardsProductField'] && $product = $oProduct->getOne('Product')) {
-//                        $this->modx->log(1, 'FIELD ' . $this->config['levelRewardsProductField']);
-//                        $this->modx->log(1, 'PRODUCT FIELD ' . $product->get($this->config['levelRewardsProductField']));
-                        $productRewards = $this->modx->fromJSON($product->get($this->config['levelRewardsProductField']));
-//                        $this->modx->log(1, 'PRODUCT REWARDS ' . print_r($productRewards, 1));
-                        if (is_array($productRewards)) {
-                            $products[$pId] = array_merge($products[$pId], $productRewards);
+                        $productField = $this->getFieldFromResource($product, $this->config['levelRewardsProductField']);
+                        if (!empty($productField)) {
+                            $this->modx->log(1, 'FIELD ' . $this->config['levelRewardsProductField']);
+                            $this->modx->log(1, 'PRODUCT FIELD ' . $productField);
+                            $productRewards = $this->modx->fromJSON($productField);
+                            $this->modx->log(1, 'PRODUCT REWARDS ' . print_r($productRewards, 1));
+                            if (is_array($productRewards)) {
+                                $products[$pId] = array_replace($products[$pId], $productRewards);
+                            }
                         }
+//                        $this->modx->log(1, 'FINAL PRODUCT REWARDS ' . print_r($products[$pId], 1));
                     }
                 }
                 foreach ($levelUsers as $level => $user) {
@@ -164,10 +180,11 @@ class referrals
         } elseif ($action === refLog::ACTION_REVOKE) {
             $logs = $this->modx->getCollection('refLog', ['order' => $order->get('id'), 'action' => refLog::ACTION_REWARD, 'status' => refLog::STATUS_ACTIVE]);
             foreach ($logs as $log) {
-                $rewardUsers[$log->get('user')] = -1 * $log->get('amount');
+                $rewardUsers[$log->get('user')] = -1 * $log->get('delta');
             }
         }
 
+//        $this->modx->log(1, 'REWARD USERS ' . print_r($rewardUsers, 1));
         foreach ($rewardUsers as $rewardUser => $amount) {
             $reward = $amount * $multiply;
             if ($reward) {
@@ -492,19 +509,23 @@ class referrals
     }
 
 
-    public function getAvailableForUse($account = 0, $forOrder = false, $ctx = 'web')
+    public function getAvailableForUse($account = 0, $forOrder = false, $msCtx = null)
     {
+        if (!$msCtx) {
+            $msCtx = $this->config['msCtx'];
+        }
         $account = $account ?: $this->config['accountMoney'];
         if ($balance = $this->getBalance($account)) {
             /** @var miniShop2 $ms2 */
             if ($forOrder and $ms2 = $this->modx->getService('minishop2')) {
                 $amount = 0;
-                $ms2->initialize($ctx);
+                $ms2->initialize($msCtx);
                 $cart = $ms2->cart->get();
                 foreach ($cart as $good) {
                     $useLimit = $this->config['useLimit'];
+                    /** @var msProduct $product */
                     if ($product = $this->modx->getObject('msProduct', $good['id'])) {
-                        $productLimit = $product->get($this->config['useLimitProductField']);
+                        $productLimit = $this->getFieldFromResource($product, $this->config['useLimitProductField']);
                         if (!empty($productLimit) || $productLimit === 0 || $productLimit === '0') {
                             $useLimit = $productLimit;
                         }
@@ -540,6 +561,30 @@ class referrals
         return $accountType;
     }
 
+
+    /**
+     * @param modResource $resource
+     * @param string $field
+     *
+     * @return mixed
+     */
+    public function getFieldFromResource($resource, $field)
+    {
+        $this->modx->log(1, 'GET FIELD FROM RESOURCE. FIELD '  . $field);
+        if (array_key_exists($field, $resource->_fieldMeta)) {
+            return $resource->get($field);
+        } else {
+            $q = $this->modx->newQuery('modTemplateVarResource');
+            $q->innerJoin('modTemplateVar', 'TV', 'TV.id = modTemplateVarResource.tmplvarid');
+            $q->where(['modTemplateVarResource.contentid' => $resource->get('id'), 'TV.name' => $field]);
+            $q->select('modTemplateVarResource.value');
+            $q->prepare();
+            $q->stmt->execute();
+            $value = $q->stmt->fetch(PDO::FETCH_COLUMN);
+
+            return $value;
+        }
+    }
 
     public function registerScripts($jsParams = [])
     {
