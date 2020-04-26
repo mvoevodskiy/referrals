@@ -11,6 +11,7 @@
                     'innerJoin' => '{"refUser":{"class":"refUser", "on":"refUser.user = modUser.id and refUser.master = \'' ~ $_modx->user.id ~ '\'"}}',
                     'select' => '{"refUser":"confirmed"}',
                     'groupby' => '',
+                    'limit' => 0,
                     'tpl' => '@INLINE <span style="{if !$confirmed ?}color: gray{/if}"> {$fullname ?: $username}</span> ',
                     'showLog' => false,
                     ])}
