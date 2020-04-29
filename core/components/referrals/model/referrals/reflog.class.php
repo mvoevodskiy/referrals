@@ -26,7 +26,7 @@ class refLog extends xPDOSimpleObject {
     /**
      * @param array $args First element: xPDO. Second element: array with required keys: user, action, account; Optional keys: delta, balance, order, parent, status
      *
-     * @return bool
+     * @return bool|refLog
      */
     public static function write(...$args)
     {
@@ -71,7 +71,7 @@ class refLog extends xPDOSimpleObject {
                 if ($parent) {
                     self::revoke($xpdo, $parent);
                 }
-                return true;
+                return $log;
             }
         }
         return false;
