@@ -28,7 +28,7 @@ $key = md5($modx->toJSON($scriptProperties));
 $_SESSION['referrals']['pay'][$key] = $scriptProperties;
 
 $user = $referrals->getUser();
-$sameGroup = false;
+$sameGroup = true;
 if ($user && !empty($groups)) {
     $sameGroup = false;
     $groups = explode(',', $groups);
