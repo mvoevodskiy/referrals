@@ -196,7 +196,7 @@ class referrals
     }
 
 
-    public function updateAccount($user, $action, $accountType, $delta, $order = 0, $parent = null)
+    public function updateAccount($userId, $action, $accountType, $delta, $orderId = 0, $parent = null)
     {
         if (!$accountType) {
             return;
@@ -204,21 +204,36 @@ class referrals
         if (!class_exists('refAccount')) {
             $this->modx->loadClass('refAccount');
         }
-        $accountData = ['user' => $user, 'type' => $accountType];
+        $response = $this->invokeEvent('refOnPrepareUpdateAccount', [
+            'referrals' => $this,
+            'action' => $action,
+            'userId' => $userId,
+            'accountType' => $accountType,
+            'delta' => $delta,
+            'orderId' => $orderId,
+            'parent' => $parent,
+        ]);
+        if ($response['success']) {
+            extract($response['data'], EXTR_IF_EXISTS);
+        }
+        $accountData = ['user' => $userId, 'type' => $accountType];
         if (!$account = $this->modx->getObject('refAccount', $accountData)) {
             $account = $this->modx->newObject('refAccount', $accountData);
         }
         $account->set('balance', $account->get('balance') + $delta);
-        if ($account->save()) {
-            refLog::write($this->modx, [
-                'action' => $action,
-                'user' => $user,
-                'account' => $account->get('id'),
-                'delta' => $delta,
-                'balance' => $account->get('balance'),
-                'order' => $order,
-                'parent' => $parent,
-            ]);
+        $logData = [
+            'action' => $action,
+            'user' => $userId,
+            'account' => $account->get('id'),
+            'delta' => $delta,
+            'balance' => $account->get('balance'),
+            'order' => $orderId,
+            'parent' => $parent,
+        ];
+        $response = $this->invokeEvent('refOnBeforeUpdateAccount', ['referrals' => $this, 'account' => $account, 'logData' => $logData]);
+        if ($response['success'] && $account->save()) {
+            $log = refLog::write($this->modx, $logData);
+            $this->invokeEvent('refOnUpdateAccount', ['referrals' => $this, 'account' => $account, 'log' => $log]);
         }
     }
 
@@ -602,6 +617,43 @@ class referrals
         $script .= '</script>';
         $this->modx->regClientScript($script);
         $this->modx->regClientScript(str_replace('[[+jsUrl]]', $this->config['jsUrl'], $this->config['frontendJS']));
+    }
+
+    /**
+     * Shorthand for original modX::invokeEvent() method with some useful additions.
+     * Regards to @bezumkin
+     *
+     * @param $eventName
+     * @param array $params
+     * @param $glue
+     *
+     * @return array
+     */
+    public function invokeEvent($eventName, array $params = array(), $glue = '<br/>')
+    {
+        if (isset($this->modx->event->returnedValues)) {
+            $this->modx->event->returnedValues = null;
+        }
+
+        $response = $this->modx->invokeEvent($eventName, $params);
+        if (is_array($response) && count($response) > 1) {
+            foreach ($response as $k => $v) {
+                if (empty($v)) {
+                    unset($response[$k]);
+                }
+            }
+        }
+
+        $message = is_array($response) ? implode($glue, $response) : trim((string)$response);
+        if (isset($this->modx->event->returnedValues) && is_array($this->modx->event->returnedValues)) {
+            $params = array_merge($params, $this->modx->event->returnedValues);
+        }
+
+        return array(
+            'success' => empty($message),
+            'message' => $message,
+            'data' => $params,
+        );
     }
 
 }
