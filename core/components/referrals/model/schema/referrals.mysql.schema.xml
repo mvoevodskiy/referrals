@@ -55,6 +55,7 @@
 
     <object class="refLog" table="referrals_log" extends="xPDOSimpleObject">
         <field key="user" dbtype="int" precision="10" phptype="integer" null="true" default="0"/>
+        <field key="referral" dbtype="int" precision="10" phptype="integer" null="true" default="0"/>
         <field key="parent" dbtype="int" precision="10" phptype="integer" null="true" default="0"/>
         <field key="action" dbtype="varchar" precision="20" phptype="string" null="false" default=""/>
         <field key="ctx" dbtype="varchar" precision="255" phptype="string" null="false" default=""/>
@@ -69,6 +70,9 @@
         <index alias="user" name="user" primary="false" unique="false" type="BTREE">
             <column key="user" length="" collation="A" null="false"/>
         </index>
+        <index alias="referral" name="referral" primary="false" unique="false" type="BTREE">
+            <column key="referral" length="" collation="A" null="false"/>
+        </index>
         <index alias="action" name="action" primary="false" unique="false" type="BTREE">
             <column key="action" length="" collation="A" null="false"/>
         </index>
@@ -81,6 +85,8 @@
 
         <aggregate alias="User" class="modUser" local="user" foreign="id" cardinality="one" owner="foreign"/>
         <aggregate alias="UserProfile" class="modUserProfile" local="user" foreign="internalKey" cardinality="one" owner="foreign"/>
+        <aggregate alias="Referral" class="modUser" local="referral" foreign="id" cardinality="one" owner="foreign"/>
+        <aggregate alias="ReferralProfile" class="modUserProfile" local="referral" foreign="internalKey" cardinality="one" owner="foreign"/>
         <aggregate alias="Parent" class="refLog" local="parent" foreign="id" cardinality="one" owner="foreign"/>
 
     </object>
