@@ -6,11 +6,15 @@ if ($modx->context->key === 'mgr') {
 }
 
 $session = & $_SESSION['referrals'];
-$key = $modx->getOption('referralKey', $_POST, false);
+$key = $modx->getOption('referralKey', $_REQUEST, false);
 
+//$modx->log(1, $modx->user->id . ' ' . $modx->event->name . ' . ' . 'REF PLUGIN. COUNT SP ' . count($scriptProperties));
 if ($key) {
-    $scriptProperties = $_SESSION['referral']['pay'][$key] ?? $scriptProperties;
+    $scriptProperties = array_merge($scriptProperties, $_SESSION['referrals']['pay'][$key] ?? []);
+//    $modx->log(1, $modx->user->id . ' ' . $modx->event->name . ' . ' . 'REF PLUGIN. SP FROM SESSION! ');
 }
+//$modx->log(1, $modx->user->id . ' ' . $modx->event->name . ' . ' . 'REF PLUGIN. COUNT SP ' . count($scriptProperties));
+//$modx->log(1, $modx->user->id . ' ' . $modx->event->name . ' . ' . 'REF PLUGIN. APPLY ACCOUNT FROM SESSION ' . print_r($session['applyAccount'], 1));
 
 /** @var referrals $referrals */
 if (!$referrals = $modx->getService('referrals', 'referrals', $modx->getOption('referrals_core_path', null,
@@ -18,13 +22,17 @@ if (!$referrals = $modx->getService('referrals', 'referrals', $modx->getOption('
 ) {
     return 'Could not load referrals class!';
 }
+//$modx->log(1, $modx->user->id . ' ' . $modx->event->name . ' . ' . 'REF PLUGIN. REF CTX ' . print_r($referrals->config['ctx'], 1));
+
 $modx->loadClass('refLog');
 $isAjax = !empty($_SERVER['HTTP_X_REQUESTED_WITH']) && $_SERVER['HTTP_X_REQUESTED_WITH'] == 'XMLHttpRequest';
+$accountId = $scriptProperties['accountId'] ?? $referrals->config['accountMoney'];
 
-$defaultApplyAccount = ['sum' => 0, 'type' => $referrals->config['accountMoney']];
+$defaultApplyAccount = ['sum' => 0, 'type' => $accountId];
+//$modx->log(1, $modx->user->id . ' ' . $modx->event->name . ' . ' . 'REF PLUGIN. DEF APPLY ACCONT ' . print_r($defaultApplyAccount, 1) . ' POST ' . print_r($_POST, 1));
 
 switch ($modx->event->name) {
-    case 'OnMODXInit':
+    case 'OnHandleRequest':
 
         if ($modx->context->key == 'mgr') {
             return true;
@@ -36,16 +44,17 @@ switch ($modx->event->name) {
          *
          */
         /** @var referrals $ref */
-        $ref = $modx->getService('referrals');
+        // $ref = $modx->getService('referrals');
+        $ref = $referrals;
         $modx->loadClass('refLog');
-        $modx->loadClass('referrals');
+        // $modx->loadClass('referrals');
 
-        $varCookie = $modx->getOption('referrals_var_cookie');
-        $varUrl = $modx->getOption('referrals_var_url');
+        $varCookie = $ref->config['cookie']['var'];
+        $varUrl = $ref->config['urlVar'];
         if (!isset($_COOKIE[$varCookie]) && isset($_GET[$varUrl]) && (int) $_GET[$varUrl]) {
             $master = (int) $_GET[$varUrl];
             if ($modx->getCount('refUser', ['user' => $master, 'confirmed' => true])) {
-                setcookie($varCookie, (int)$_GET[$varUrl], time() + $referrals->config['ttl']['cookie'] * 3600 * 24);
+                setcookie($varCookie, (int)$_GET[$varUrl], time() + $ref->config['ttl']['cookie'] * 3600 * 24, '/', $ref->config['cookie']['domain']);
             }
         }
 
@@ -56,7 +65,7 @@ switch ($modx->event->name) {
          */
         $applyRefAccount = (int)$modx->getOption('referralApplyAccount', $_POST, -1);
         if (empty($_POST['ms2_action']) && $applyRefAccount >= 0) {
-            $ctx = $modx->getOption('ctx', $_POST, 'web');
+            $ctx = $modx->getOption('msCtx', $scriptProperties, $modx->getOption('ctx', $scriptProperties, $modx->context->key));
             /** @var miniShop2 $ms2 */
             $ms2 = $modx->getService('minishop2');
             $ms2->initialize($ctx);
@@ -77,6 +86,7 @@ switch ($modx->event->name) {
                 $data['msg'] = 'Доступно для списания не более ' . $available . ' руб.';
             }
             $data['data']['available'] = $available;
+            $data['data']['applied'] = $applyRefAccount;
             @session_write_close();
             exit($modx->toJSON($data));
         }
@@ -104,6 +114,15 @@ switch ($modx->event->name) {
                 case 'manage/referral/attach':
                     $result = $referrals->attachReferral((int) $_POST['master'], (string) $_POST['email']);
                     break;
+
+                case 'available/get':
+                    if ($modx->user->id == 1739) {
+                        $modx->log(1, print_r($referrals->config, 1));
+                    }
+                    $result = [
+                        'balance' => $referrals->getBalance($accountId),
+                        'available' => $referrals->getAvailableForUse($accountId, true),
+                    ];
             }
 
             $result = $result === true || is_array($result) ? $modx->error->success('', $result) : $modx->error->failure(is_string($result) ? $result : '');
@@ -123,7 +142,8 @@ switch ($modx->event->name) {
                 /** @var refUser $refUser */
                 $refUser = $modx->newObject('refUser', [
                     'user' => $userprofile->get('internalKey'),
-                    'master' => $master
+                    'master' => $master,
+                    'ctx' => $referrals->config['ctx'],
                 ]);
                 if ($refUser->save()) {
 //                    $modx->getService('referrals');
@@ -164,17 +184,17 @@ switch ($modx->event->name) {
     case 'msOnCreateOrder':
         /** @var int $sum */
         /** @var int $type */
-        $propsElem = $referrals->config['orderPropertiesElement'];
-        /** @var msOrder $msOrder */
-        $properties = $msOrder->get('properties');
-        $refProperties = $properties[$propsElem];
-        if ($refProperties['useFromAccount'] && $sum = $refProperties['useFromAccount']['sum']) {
-            $delivery = $msOrder->get('delivery_cost');
-            if ($sum) {
-                $msOrder->set('delivery_cost', $delivery + $sum);
-                $msOrder->save();
-            }
-        }
+//        $propsElem = $referrals->config['orderPropertiesElement'];
+//        /** @var msOrder $msOrder */
+//        $properties = $msOrder->get('properties');
+//        $refProperties = $properties[$propsElem];
+//        if ($refProperties['useFromAccount'] && $sum = $refProperties['useFromAccount']['sum']) {
+//            $delivery = $msOrder->get('delivery_cost');
+//            if ($sum) {
+//                $msOrder->set('delivery_cost', $delivery + $sum);
+//                $msOrder->save();
+//            }
+//        }
 
         break;
 
