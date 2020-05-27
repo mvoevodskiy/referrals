@@ -90,7 +90,7 @@ class referrals
         $accountMoney = $this->config['accountMoney'];
         $this->updateAccount($master, refLog::ACTION_REGISTER_REFERRAL, $accountReferrals, 1);
         if ($this->config['rewardRegisterMaster']) {
-            $this->updateAccount($master, refLog::ACTION_REWARD_REGISTER, $accountMoney, $this->config['rewardRegisterMaster']);
+            $this->updateAccount($master, refLog::ACTION_REWARD_REGISTER, $accountMoney, $this->config['rewardRegisterMaster'], 0, null, $user);
         }
         if ($this->config['rewardRegisterUser']) {
             $this->updateAccount($user, refLog::ACTION_REWARD_REGISTER, $accountMoney, $this->config['rewardRegisterUser']);
@@ -187,8 +187,9 @@ class referrals
 //        $this->modx->log(1, 'REWARD USERS ' . print_r($rewardUsers, 1));
         foreach ($rewardUsers as $rewardUser => $amount) {
             $reward = $amount * $multiply;
+            $referral = $order->get('user_id') !== $rewardUser ? $order->get('user_id') : 0;
             if ($reward) {
-                $this->updateAccount($rewardUser, $action, $accountType, $reward, $order->get('id'));
+                $this->updateAccount($rewardUser, $action, $accountType, $reward, $order->get('id'), null, $referral);
             }
         }
 
@@ -196,7 +197,7 @@ class referrals
     }
 
 
-    public function updateAccount($userId, $action, $accountType, $delta, $orderId = 0, $parent = null)
+    public function updateAccount($userId, $action, $accountType, $delta, $orderId = 0, $parent = null, $referral = 0)
     {
         if (!$accountType) {
             return;
@@ -219,6 +220,7 @@ class referrals
         $accountData = ['user' => $userId, 'type' => $accountType];
         if (!$account = $this->modx->getObject('refAccount', $accountData)) {
             $account = $this->modx->newObject('refAccount', $accountData);
+            $account->save();
         }
         $account->set('balance', $account->get('balance') + $delta);
         $logData = [
@@ -229,6 +231,7 @@ class referrals
             'balance' => $account->get('balance'),
             'order' => $orderId,
             'parent' => $parent,
+            'referral' => $referral
         ];
         $response = $this->invokeEvent('refOnBeforeUpdateAccount', ['referrals' => $this, 'account' => $account, 'logData' => $logData]);
         if ($response['success'] && $account->save()) {
@@ -247,7 +250,7 @@ class referrals
             $sent = $extended['referrals']['confirmCode'];
             if ($code == $sent) {
                 if (!$refUser = $this->modx->getObject('refUser', ['user' => $user->get('id')])) {
-                    $refUser = $this->modx->newObject('refUser', ['user' => $user->get('id')]);
+                    $refUser = $this->modx->newObject('refUser', ['user' => $user->get('id'), 'ctx' => $this->config['ctx'],]);
                 }
                 $refUser->set('confirmed', true);
                 if ($refUser->save()) {
@@ -458,7 +461,7 @@ class referrals
 
         if ($user && $master) {
             if (!$this->modx->getObject('refUser', ['user' => $user->id])) {
-                $ref = $this->modx->newObject('refUser', ['master' => $master->id, 'user' => $user->id]);
+                $ref = $this->modx->newObject('refUser', ['master' => $master->id, 'user' => $user->id, 'ctx' => $this->config['ctx'],]);
             } elseif ($ref = $this->modx->getObject('refUser', ['master' => 0, 'user' => $user->id])) {
                 $ref->set('master', $master->id);
             }
