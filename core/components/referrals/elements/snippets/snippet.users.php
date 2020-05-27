@@ -45,12 +45,14 @@ foreach ($usersTmp as $userTmp) {
 
 if (!empty($userIds)) {
     $q = $modx->newQuery('refLog');
+    $q->innerJoin('refAccount', 'refAccount', 'refAccount.id = refLog.account');
     $q->where([
         'refLog.user:IN' => $userIds,
-        'refLog.status:IN' => [refLog::STATUS_ACTIVE, refLog::STATUS_REVOKED, '']
+        'refLog.status:IN' => [refLog::STATUS_ACTIVE, refLog::STATUS_REVOKED, ''],
+        'refAccount.type:!=' => $referrals->config['accountReferrals'],
     ]);
-    $q->select('user, SUM(delta) as delta');
-    $q->groupby('user');
+    $q->select('refLog.user as user, SUM(refLog.delta) as delta');
+    $q->groupby('refLog.user');
     $q->prepare();
     $q->stmt->execute();
 
@@ -59,6 +61,53 @@ if (!empty($userIds)) {
     foreach ($deltas as $delta) {
         if (isset($users[$delta['user']])) {
             $users[$delta['user']]['delta'] = $delta['delta'];
+        }
+    }
+
+    $q = $modx->newQuery('refLog');
+    $q->innerJoin('refAccount', 'refAccount', 'refAccount.id = refLog.account');
+    $q->where([
+        'refLog.user:IN' => $userIds,
+        'refLog.status:IN' => [refLog::STATUS_ACTIVE, ''],
+        'refLog.action:IN' => [refLog::ACTION_INCREASE, refLog::ACTION_ORDER_INCREASE, refLog::ACTION_REGISTER, refLog::ACTION_REGISTER_REFERRAL, refLog::ACTION_REWARD, refLog::ACTION_REWARD_REGISTER],
+        'refAccount.type:!=' => $referrals->config['accountReferrals'],
+    ]);
+    $q->select('refLog.user as user, SUM(refLog.delta) as charge');
+    $q->groupby('refLog.referral');
+    $q->prepare();
+    $modx->log(1, $q->toSQL());
+    $q->stmt->execute();
+
+    $deltas = $q->stmt->fetchAll(PDO::FETCH_ASSOC);
+    $modx->log(1, 'REFERRALS CHARGES: ' . print_r($deltas, 1));
+
+    foreach ($deltas as $delta) {
+        if (isset($users[$delta['referral']])) {
+            $users[$delta['user']]['charge'] = $delta['charge'];
+        }
+    }
+
+    $q = $modx->newQuery('refLog');
+    $q->innerJoin('refAccount', 'refAccount', 'refAccount.id = refLog.account');
+    $q->where([
+        'refLog.user' => $user->get('id'),
+        'refLog.referral:IN' => $userIds,
+        'refLog.status:IN' => [refLog::STATUS_ACTIVE, ''],
+        'refLog.action:IN' => [refLog::ACTION_INCREASE, refLog::ACTION_ORDER_INCREASE, refLog::ACTION_REGISTER, refLog::ACTION_REGISTER_REFERRAL, refLog::ACTION_REWARD, refLog::ACTION_REWARD_REGISTER],
+        'refAccount.type:!=' => $referrals->config['accountReferrals'],
+    ]);
+    $q->select('refLog.referral as referral, SUM(refLog.delta) as income');
+    $q->groupby('refLog.referral');
+    $q->prepare();
+    $modx->log(1, $q->toSQL());
+    $q->stmt->execute();
+
+    $deltas = $q->stmt->fetchAll(PDO::FETCH_ASSOC);
+    $modx->log(1, 'REFERRALS INCOMES: ' . print_r($deltas, 1));
+
+    foreach ($deltas as $delta) {
+        if (isset($users[$delta['referral']])) {
+            $users[$delta['referral']]['income'] = $delta['income'];
         }
     }
 
