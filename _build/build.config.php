@@ -4,11 +4,11 @@
 define('PKG_NAME', 'referrals');
 define('PKG_NAME_LOWER', strtolower(PKG_NAME));
 
-define('PKG_VERSION', '0.1.0');
+define('PKG_VERSION', '0.1.3');
 define('PKG_RELEASE', 'beta');
 define('PKG_AUTO_INSTALL', true);
 define('PKG_NAMESPACE_PATH', '{core_path}components/' . PKG_NAME_LOWER . '/');
-define('CA_DEVELOPER_MODE', true);
+define('CA_DEVELOPER_MODE', false);
 
 // define paths
 if (isset($_SERVER['MODX_BASE_PATH'])) {
