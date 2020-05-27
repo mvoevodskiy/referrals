@@ -123,6 +123,28 @@ Referrals.manageAttachReferral = function (e) {
     });
 };
 
+Referrals.refreshAvailable = function (key) {
+    $.post(window.location.href, {referrals_action: 'available/get', referralKey: key}, function (data) {
+        // $.post(window.location.href, {referralApplyAccount: applyAccount, referralKey: key}, function (data) {
+        response = JSON.parse(data);
+        if (response.success) {
+            $('.referrals_apply_balance').html(response.object.balance);
+            $('.referrals_apply_available').html(response.object.available);
+            if (response.object.available > 0) {
+                $('#referrals_pay_outer').show();
+            } else {
+                $('#referrals_pay_outer').hide();
+            }
+            document.dispatchEvent(new CustomEvent('referrals_refresh_available', {details: response}));
+            if (typeof $ === 'function') {
+                $(document).trigger('referrals_refresh_available_jq', response);
+            }
+        } else {
+            Referrals.failure(response.message);
+        }
+    });
+}
+
 jQuery(document).ready(function($) {
     $('#referralsBtnApplyAccount').on('click', function (e) {
         e.preventDefault();
