@@ -36,6 +36,11 @@ $tmp = array(
         'value' => 0,
         'area' => 'referrals_values',
     ),
+    'reward_register_user_without_master' => array(
+        'xtype' => 'combo-boolean',
+        'value' => false,
+        'area' => 'referrals_values',
+    ),
 
 
 

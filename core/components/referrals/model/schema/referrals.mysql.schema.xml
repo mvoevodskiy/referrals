@@ -9,6 +9,7 @@
         <field key="createdon" dbtype="datetime" phptype="datetime" null="true"/>
         <field key="active" dbtype="tinyint" precision="1" phptype="boolean" null="true" default="1"/>
         <field key="ctx" dbtype="varchar" precision="255" phptype="string" null="false" default=""/>
+        <field key="refId" dbtype="varchar" precision="255" phptype="string" null="false" default=""/>
 
         <index alias="user" name="user" primary="false" unique="true" type="BTREE">
             <column key="user" length="" collation="A" null="false"/>
@@ -18,6 +19,9 @@
         </index>
         <index alias="active" name="active" primary="false" unique="false" type="BTREE">
             <column key="active" length="" collation="A" null="false"/>
+        </index>
+        <index alias="refId" name="refId" primary="false" unique="false" type="BTREE">
+            <column key="refId" length="" collation="A" null="false"/>
         </index>
 
         <aggregate alias="User" class="modUser" local="user" foreign="id" cardinality="one" owner="foreign"/>

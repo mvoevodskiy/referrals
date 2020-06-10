@@ -17,6 +17,10 @@ $tmp = array(
         'file' => 'users',
         'description' => '',
     ),
+    'referralsUpdateMaster' => array(
+        'file' => 'updatemaster',
+        'description' => '',
+    ),
     'referralsUsersManage' => array(
         'file' => 'usersmanage',
         'description' => '',

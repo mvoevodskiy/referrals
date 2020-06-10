@@ -67,6 +67,7 @@ class referrals
 
             'rewardRegisterMaster' => $this->modx->getOption('referrals_reward_register_master'),
             'rewardRegisterUser' => $this->modx->getOption('referrals_reward_register_user'),
+            'rewardRegisterUserWithoutMaster' => $this->modx->getOption('referrals_reward_register_user_without_master'),
 
             'orderStatuses' => [
                 'decrease' => $this->modx->getOption('referrals_order_status_decrease'),
@@ -89,10 +90,10 @@ class referrals
         $accountReferrals = $this->config['accountReferrals'];
         $accountMoney = $this->config['accountMoney'];
         $this->updateAccount($master, refLog::ACTION_REGISTER_REFERRAL, $accountReferrals, 1);
-        if ($this->config['rewardRegisterMaster']) {
+        if ($master && $this->config['rewardRegisterMaster']) {
             $this->updateAccount($master, refLog::ACTION_REWARD_REGISTER, $accountMoney, $this->config['rewardRegisterMaster'], 0, null, $user);
         }
-        if ($this->config['rewardRegisterUser']) {
+        if ($this->config['rewardRegisterUser'] || $this->config['rewardRegisterUserWithoutMaster']) {
             $this->updateAccount($user, refLog::ACTION_REWARD_REGISTER, $accountMoney, $this->config['rewardRegisterUser']);
         }
     }
@@ -240,6 +241,38 @@ class referrals
         }
     }
 
+    public function updateCookie ($masterId)
+    {
+        $varCookie = $this->config['cookie']['var'];
+        if ($masterId && $this->modx->getCount('refUser', ['user' => $masterId, 'confirmed' => true])) {
+            setcookie($varCookie, (int) $masterId, time() + $this->config['ttl']['cookie'] * 3600 * 24, '/', $this->config['cookie']['domain']);
+        }
+    }
+
+    public function updateCookieFromGet () {
+        $varUrl = $this->config['urlVar'];
+        $refId = $_GET[$varUrl] ?? '';
+        if ($refId && $refUser = $this->modx->getObject('refUser', ['refId' => $refId])) {
+            $this->updateCookie($refUser->get('user'));
+        }
+    }
+
+    /**
+     * @param $refId
+     * @param modUser|null $user
+     */
+    public function updateMasterFromCode ($refId, $user = null)
+    {
+        $user = $this->getUser($user);
+        /** @var refUser $refUser */
+        if ($user && $refUser = $this->modx->getObject('refUser', ['user' => $user->id]) && $master = $this->modx->getObject('refUser', ['refId' => $refId])) {
+            $refUser->set('master', $master->get('user'));
+            if ($refUser->save()) {
+                refLog::write($this->modx, ['user' => $user->id, 'action' => refLog::ACTION_DETACH, 'by' => $this->modx->user->id]);
+            }
+        }
+        return false;
+    }
 
     public function confirmCode($code, $user = null)
     {
@@ -254,9 +287,7 @@ class referrals
                 }
                 $refUser->set('confirmed', true);
                 if ($refUser->save()) {
-                    if ($refUser->get('master')) {
-                        $this->rewardRegister($refUser->get('user'), $refUser->get('master'));
-                    }
+                    $this->rewardRegister($refUser->get('user'), $refUser->get('master'));
                 } else {
                     $result = $this->modx->lexicon('referrals_user_error');
                 }

@@ -145,6 +145,18 @@ Referrals.refreshAvailable = function (key) {
     });
 }
 
+Referrals.masterUpdate = function (e) {
+    $.post(window.location.href, $(e.target).serializeArray(), function (data) {
+        // $.post(window.location.href, {referralApplyAccount: applyAccount, referralKey: key}, function (data) {
+        response = JSON.parse(data);
+        if (response.success) {
+            Referrals.success($('#referrals_apply_success_message').html());
+        } else {
+            Referrals.failure($('#referrals_apply_error_message').html());
+        }
+    });
+}
+
 jQuery(document).ready(function($) {
     $('#referralsBtnApplyAccount').on('click', function (e) {
         e.preventDefault();
@@ -186,5 +198,6 @@ jQuery(document).ready(function($) {
     $('.referralsManageShowMore').on('click', Referrals.manageShowDetails);
     $(document).on('click', '.referralsManageDetailsUserRemove', Referrals.manageDetachReferral);
     $(document).on('submit', '.referralsManageDetailsUserAddForm', Referrals.manageAttachReferral);
+    $(document).on('submit', '.referralsUpdateMasterForm', Referrals.masterUpdate);
 
 });

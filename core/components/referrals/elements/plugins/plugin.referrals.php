@@ -49,14 +49,7 @@ switch ($modx->event->name) {
         $modx->loadClass('refLog');
         // $modx->loadClass('referrals');
 
-        $varCookie = $ref->config['cookie']['var'];
-        $varUrl = $ref->config['urlVar'];
-        if (!isset($_COOKIE[$varCookie]) && isset($_GET[$varUrl]) && (int) $_GET[$varUrl]) {
-            $master = (int) $_GET[$varUrl];
-            if ($modx->getCount('refUser', ['user' => $master, 'confirmed' => true])) {
-                setcookie($varCookie, (int)$_GET[$varUrl], time() + $ref->config['ttl']['cookie'] * 3600 * 24, '/', $ref->config['cookie']['domain']);
-            }
-        }
+        $referrals->updateCookieFromGet();
 
         /**
          *
@@ -123,6 +116,16 @@ switch ($modx->event->name) {
                         'balance' => $referrals->getBalance($accountId),
                         'available' => $referrals->getAvailableForUse($accountId, true),
                     ];
+                    break;
+
+                case 'user/check':
+                    $result = $modx->getCount('refUser', ['refId' => (string) $modx->getOption('refId', $_POST, '')]);
+                    break;
+
+                case 'master/update':
+                    $result = $referrals->updateMasterFromCode((string) $modx->getOption('refId', $_POST, ''));
+                    break;
+
             }
 
             $result = $result === true || is_array($result) ? $modx->error->success('', $result) : $modx->error->failure(is_string($result) ? $result : '');

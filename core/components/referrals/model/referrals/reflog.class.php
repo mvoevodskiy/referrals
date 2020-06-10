@@ -17,6 +17,7 @@ class refLog extends xPDOSimpleObject {
     const ACTION_ANNUL_REFERRAL = 'annul_referral';
     const ACTION_REWARD = 'reward';
     const ACTION_REVOKE = 'revoke';
+    const ACTION_UPDATE_MASTER = 'update_master';
 
     const STATUS_ACTIVE = 'active';
     const STATUS_REVOKED = 'revoked';

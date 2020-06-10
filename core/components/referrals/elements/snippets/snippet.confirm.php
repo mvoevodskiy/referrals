@@ -18,6 +18,7 @@ if (!$referrals = $modx->getService('referrals', 'referrals', $modx->getOption('
 $pdo = $modx->getService('pdoFetch');
 $parser = $pdo ?? $modx;
 $isAjax = !empty($_SERVER['HTTP_X_REQUESTED_WITH']) && $_SERVER['HTTP_X_REQUESTED_WITH'] == 'XMLHttpRequest';
+$processed = false;
 
 $tpl = $modx->getOption('tpl', $scriptProperties, 'referrals.memberZone');
 $jsParams = $modx->getOption('jsParams', $scriptProperties, '');
@@ -30,6 +31,7 @@ $data = [
     'confirmed' => false,
     'balanceMoney' => 0,
     'balanceReferrals' => 0,
+    'refId' => '',
     'msg' => '',
 ];
 
@@ -42,6 +44,7 @@ if (isset($_POST['referralsSendCode'])) {
     } elseif ($result !== true) {
         $data['msg'] = $result;
     }
+    $processed = true;
 }
 
 if ($_POST['referralsConfirmCode'] ?? false) {
@@ -51,6 +54,7 @@ if ($_POST['referralsConfirmCode'] ?? false) {
     } elseif ($result !== true) {
         $data['msg'] = $result;
     }
+    $processed = true;
 }
 
 if ($user = $referrals->getUser()) {
@@ -62,6 +66,7 @@ if ($user = $referrals->getUser()) {
 
     $refUser = $modx->getObject('refUser', ['user' => $user->get('id')]);
     if ($refUser) {
+        $data['refId'] = $refUser->get('refId');
         $data['confirmed'] = $refUser->get('confirmed');
         if ($account = $modx->getObject('refAccount', ['user' => $refUser->get('user'), 'type' => $referrals->config['accountMoney']])) {
             $data['balanceMoney'] = $account->get('balance');
@@ -75,7 +80,7 @@ if ($user = $referrals->getUser()) {
 
 $html = $parser->getChunk($tpl, $data);
 
-if ($isAjax) {
+if ($isAjax && $processed) {
     @session_write_close();
     exit($modx->toJSON([
         'success' => empty($data['msg']),
