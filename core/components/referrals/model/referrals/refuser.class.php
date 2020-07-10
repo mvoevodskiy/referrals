@@ -17,6 +17,10 @@ class refUser extends xPDOSimpleObject {
                 if (!$prefix) {
                     $prefix = substr($profile->User->username, 0, 3);
                 }
+                /** @var modResource $resource */
+                $resource = $this->xpdo->newObject('modResource');
+                $prefix = $resource->cleanAlias($prefix);
+                $prefix = preg_replace("/[^0-9a-zA-z]/", '', $prefix);
                 $this->set('refId', /*$this->get('id') . */mb_strtoupper($prefix) . $this->get('user'));
                 $this->save();
             }
