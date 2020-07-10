@@ -265,10 +265,16 @@ class referrals
     {
         $user = $this->getUser($user);
         /** @var refUser $refUser */
-        if ($user && $refUser = $this->modx->getObject('refUser', ['user' => $user->id]) && $master = $this->modx->getObject('refUser', ['refId' => $refId])) {
+        if ($user
+            && ($refUser = $this->modx->getObject('refUser', ['user' => $user->id]))
+            && ($master = $this->modx->getObject('refUser', ['refId' => $refId]))
+        ) {
+//            $this->modx->log(1, 'REF USER: ' . print_r($refUser, 1) . ' >>> ' . gettype($refUser));
             $refUser->set('master', $master->get('user'));
             if ($refUser->save()) {
-                refLog::write($this->modx, ['user' => $user->id, 'action' => refLog::ACTION_DETACH, 'by' => $this->modx->user->id]);
+                refLog::write($this->modx,
+                    ['user' => $user->id, 'action' => refLog::ACTION_DETACH, 'by' => $this->modx->user->id]);
+                return true;
             }
         }
         return false;

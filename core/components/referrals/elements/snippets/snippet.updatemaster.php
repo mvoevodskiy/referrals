@@ -13,7 +13,7 @@ $pdoTools = $modx->getService('pdoFetch');
 /** @var miniShop2 $ms2 */
 $ms2 = $modx->getService('minishop2');
 
-$tpl = $modx->getOption('tpl', $scriptProperties, 'tpl.referrals.pay');
+$tpl = $modx->getOption('tpl', $scriptProperties, 'referrals.updateMaster');
 $ctx = $modx->getOption('ctx', $scriptProperties, $modx->context->key);
 $msCtx = $modx->getOption('msCtx', $scriptProperties, $ctx);
 $groups = $modx->getOption('groups', $scriptProperties, '');

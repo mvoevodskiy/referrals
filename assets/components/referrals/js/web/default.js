@@ -146,6 +146,7 @@ Referrals.refreshAvailable = function (key) {
 }
 
 Referrals.masterUpdate = function (e) {
+    e.preventDefault();
     $.post(window.location.href, $(e.target).serializeArray(), function (data) {
         // $.post(window.location.href, {referralApplyAccount: applyAccount, referralKey: key}, function (data) {
         response = JSON.parse(data);
