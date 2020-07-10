@@ -5,7 +5,7 @@ define('PKG_NAME', 'referrals');
 define('PKG_NAME_LOWER', strtolower(PKG_NAME));
 
 define('PKG_VERSION', '0.1.4');
-define('PKG_RELEASE', 'beta');
+define('PKG_RELEASE', 'rc');
 define('PKG_AUTO_INSTALL', true);
 define('PKG_NAMESPACE_PATH', '{core_path}components/' . PKG_NAME_LOWER . '/');
 define('CA_DEVELOPER_MODE', false);
